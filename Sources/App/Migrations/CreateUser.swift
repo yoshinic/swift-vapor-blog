@@ -10,6 +10,7 @@ struct CreateUser: Migration {
             .field("password_hash", .string)
             .field("created_at", .datetime)
             .field("updated_at", .datetime)
+            .field("deleted_at", .datetime)
             .create()
     }
     

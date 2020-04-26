@@ -22,6 +22,8 @@ struct UsersController: RouteCollection {
         tokenAuthGroup.post(use: createHandler)
         tokenAuthGroup.put(":user_id", use: updateHandler)
         tokenAuthGroup.delete(":user_id", use: deleteHandler)
+        tokenAuthGroup.post(":user_id", "restore", use: restoreHandler)
+        tokenAuthGroup.delete(":user_id", "force", use: forceDeleteHandler)
     }
     
     func getAllHandler(_ req: Request) throws -> EventLoopFuture<[User.Public]> {
@@ -104,6 +106,28 @@ struct UsersController: RouteCollection {
             .unwrap(or: Abort(.notFound))
             .flatMap { user in
                 return user.delete(on: req.db).transform(to: .ok)
+        }
+    }
+    
+    func restoreHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
+        let userID = req.parameters.get("user_id", as: User.IDValue.self)
+        return User
+            .query(on: req.db)
+            .filter(\.$id == userID!)
+            .withDeleted()
+            .first()
+            .unwrap(or: Abort(.notFound))
+            .flatMap { user -> EventLoopFuture<HTTPResponseStatus> in
+                user.restore(on: req.db).transform(to: .ok)
+        }
+    }
+    
+    func forceDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
+        User
+            .find(req.parameters.get("user_id"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .flatMap { user -> EventLoopFuture<HTTPResponseStatus> in
+                return user.delete(force: true, on: req.db).transform(to: .ok)
         }
     }
 }

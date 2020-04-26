@@ -188,8 +188,8 @@ final class UserTests: XCTestCase {
         }
     }
     
-    // 保存した User を削除できるか確認
-    func testDeletingAnUser() throws {
+    // 保存した User を Soft Delete & Restore できるか確認
+    func testSoftDeletingAndRestoringAnUser() throws {
         try _testAfterLoggedIn(loggedInRequest: true) { app, headers in
             let user = try User.create(on: app.db)
             try app.test(.GET, usersURI, headers: headers) { response in
@@ -206,6 +206,43 @@ final class UserTests: XCTestCase {
                 .test(.GET, usersURI) { response in
                     users = try response.content.decode([User.Public].self)
                     XCTAssertEqual(users.count, 1)
+                    
+                    let count = try app.db.query(User.self).withDeleted().count().wait()
+                    XCTAssertEqual(count, 2)
+                }
+                .test(.POST, "\(usersURI)\(user.id!)/restore", headers: headers)
+                .test(.GET, usersURI) { response in
+                    users = try response.content.decode([User.Public].self)
+                    XCTAssertEqual(users.count, 2)
+                    
+                    let count = try app.db.query(User.self).withDeleted().count().wait()
+                    XCTAssertEqual(count, 2)
+                }
+                
+            }
+        }
+    }
+    
+    func testForceDeletingAnUser() throws {
+        try _testAfterLoggedIn(loggedInRequest: true) { app, headers in
+            let user = try User.create(on: app.db)
+            try app.test(.GET, usersURI, headers: headers) { response in
+                var users = try response.content.decode([User.Public].self)
+                XCTAssertEqual(users.count, 2)
+                
+                try app
+                    .test(.DELETE, "\(usersURI)\(user.id!)/force")
+                    .test(.GET, usersURI) { response in
+                        users = try response.content.decode([User.Public].self)
+                        XCTAssertEqual(users.count, 2)
+                }
+                .test(.DELETE, "\(usersURI)\(user.id!)/force", headers: headers)
+                .test(.GET, usersURI) { response in
+                    users = try response.content.decode([User.Public].self)
+                    XCTAssertEqual(users.count, 1)
+                    
+                    let count = try app.db.query(User.self).withDeleted().count().wait()
+                    XCTAssertEqual(count, 1)
                 }
             }
         }
@@ -218,7 +255,8 @@ final class UserTests: XCTestCase {
         ("testGettingAUsersBlogsFromTheAPI", testGettingAUsersBlogsFromTheAPI),
         ("testUpdatingAnUser", testUpdatingAnUser),
         ("testUpdatingErrorAnUser", testUpdatingErrorAnUser),
-        ("testDeletingAnUser", testDeletingAnUser)
+        ("testSoftDeletingAndRestoringAnUser", testSoftDeletingAndRestoringAnUser),
+        ("testForceDeletingAnUser", testForceDeletingAnUser)
     ]
 }
 
