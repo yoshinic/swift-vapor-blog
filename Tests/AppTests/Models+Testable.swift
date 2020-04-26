@@ -26,6 +26,7 @@ extension User {
     static func create(
         name: String = "デフォルト名",
         username: String? = nil,
+        password: String = "password",
         on db: Database
     ) throws -> User {
         let createUsername: String
@@ -34,7 +35,7 @@ extension User {
         } else {
             createUsername = UUID().uuidString
         }
-        let passwordHash = try Bcrypt.hash("password")
+        let passwordHash = try Bcrypt.hash(password)
         let user = User(name: name, username: createUsername, passwordHash: passwordHash)
         return try user.save(on: db).map { user }.wait()
     }

@@ -30,14 +30,16 @@ final class BlogTests: XCTestCase {
     
     // Blog が保存されるか確認
     func testBlogCanBeSavedWithAPI() throws {
-        try _test { app in
+        try _testAfterLoggedIn(loggedInRequest: true) { app, headers in
+            var headers = headers
+            headers.add(name: "Content-Type", value: "application/json")
             let newUser = try User.create(on: app.db)
             let blog = Blog(title: blogTitle, contents: blogContents, userID: newUser.id!)
             try app
                 .test(
                     .POST,
                     blogsURI,
-                    headers: .init([("Content-Type", "application/json")]),
+                    headers: headers,
                     beforeRequest: { request in
                         try request.content.encode(blog)
                 },
@@ -90,7 +92,9 @@ final class BlogTests: XCTestCase {
     
     // 保存した Blog を更新できるか確認
     func testUpdatingAnBlog() throws {
-        try _test { app in
+        try _testAfterLoggedIn(loggedInRequest: true) { app, headers in
+            var headers = headers
+            headers.add(name: "Content-Type", value: "application/json")
             let blog = try Blog.create(title: blogTitle, contents: blogContents, on: app.db)
             let newContents = "更新内容"
             let newUser = try User.create(on: app.db)
@@ -99,7 +103,20 @@ final class BlogTests: XCTestCase {
                 .test(
                     .PUT,
                     "\(blogsURI)\(blog.id!)",
-                    headers: .init([("Content-Type", "application/json")]),
+                    beforeRequest: { request in
+                        try request.content.encode(updatedBlog)
+                },
+                    afterResponse: { response in
+                        try app.test(.GET, "\(blogsURI)\(blog.id!)") { response in
+                            let returnedBlog = try response.content.decode(Blog.self)
+                            XCTAssertEqual(returnedBlog.title, blogTitle)
+                            XCTAssertEqual(returnedBlog.contents, blogContents)
+                        }
+                })
+                .test(
+                    .PUT,
+                    "\(blogsURI)\(blog.id!)",
+                    headers: headers,
                     beforeRequest: { request in
                         try request.content.encode(updatedBlog)
                 },
@@ -116,7 +133,7 @@ final class BlogTests: XCTestCase {
     
     // 保存した Blog を削除できるか確認
     func testDeletingAnBlog() throws {
-        try _test { app in
+        try _testAfterLoggedIn(loggedInRequest: true) { app, headers in
             let blog = try Blog.create(on: app.db)
             try app.test(.GET, blogsURI) { response in
                 var blogs = try response.content.decode([Blog].self)
@@ -126,7 +143,12 @@ final class BlogTests: XCTestCase {
                     .test(.DELETE, "\(blogsURI)\(blog.id!)")
                     .test(.GET, blogsURI) { response in
                         blogs = try response.content.decode([Blog].self)
-                        XCTAssertEqual(blogs.count, 0)
+                        XCTAssertEqual(blogs.count, 1)
+                }
+                .test(.DELETE, "\(blogsURI)\(blog.id!)", headers: headers)
+                .test(.GET, blogsURI) { response in
+                    blogs = try response.content.decode([Blog].self)
+                    XCTAssertEqual(blogs.count, 0)
                 }
             }
         }

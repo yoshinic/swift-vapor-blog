@@ -72,3 +72,26 @@ extension User {
         var password: String
     }
 }
+
+extension User: ModelAuthenticatable {
+    static var usernameKey: KeyPath<User, Field<String>> {
+        return  \.$username
+    }
+    
+    static var passwordHashKey: KeyPath<User, Field<String>> {
+        return \.$passwordHash
+    }
+    
+    func verify(password: String) throws -> Bool {
+        try Bcrypt.verify(password, created: self.passwordHash)
+    }
+}
+
+extension User {
+    func generateToken() throws -> UserToken {
+        try .init(
+            value: [UInt8].random(count: 16).base64,
+            userID: self.requireID()
+        )
+    }
+}

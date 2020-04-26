@@ -17,6 +17,7 @@ public func configure(_ app: Application) throws {
 
     app.migrations.add(CreateUser())
     app.migrations.add(CreateBlog())
+    app.migrations.add(CreateUserToken())
     try app.autoMigrate().wait()
 
     // register routes

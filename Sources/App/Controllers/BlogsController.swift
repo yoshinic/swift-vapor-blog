@@ -7,9 +7,15 @@ struct BlogsController: RouteCollection {
         blogsRoutes.get(use: getAllHandler)
         blogsRoutes.get(":blog_id", use: getHandler)
         blogsRoutes.get(":blog_id", "user", use: getUserHandler)
-        blogsRoutes.post(use: createHandler)
-        blogsRoutes.put(":blog_id", use: updateHandler)
-        blogsRoutes.delete(":blog_id", use: deleteHandler)
+        
+        let tokenAuthGroup = blogsRoutes.grouped(
+            UserToken.authenticator(database: .psql),
+            User.guardMiddleware()
+        )
+        
+        tokenAuthGroup.post(use: createHandler)
+        tokenAuthGroup.put(":blog_id", use: updateHandler)
+        tokenAuthGroup.delete(":blog_id", use: deleteHandler)
     }
     
     func getAllHandler(_ req: Request) throws -> EventLoopFuture<[Blog]> {
@@ -36,7 +42,7 @@ struct BlogsController: RouteCollection {
     }
     
     func updateHandler(_ req: Request) throws -> EventLoopFuture<Blog> {
-        let blogID = req.parameters.get("blog_id", as: UUID.self)
+        let blogID = req.parameters.get("blog_id", as: Blog.IDValue.self)
         let updateBlogData = try req.content.decode(Blog.self)
         return Blog
             .find(blogID, on: req.db)
@@ -54,7 +60,7 @@ struct BlogsController: RouteCollection {
     }
     
     func deleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-        let blogID = req.parameters.get("blog_id", as: UUID.self)
+        let blogID = req.parameters.get("blog_id", as: Blog.IDValue.self)
         return Blog
             .find(blogID, on: req.db)
             .unwrap(or: Abort(.notFound))

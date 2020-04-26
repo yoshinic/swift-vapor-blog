@@ -27,15 +27,17 @@ final class UserTests: XCTestCase {
     }
     
     func testUserCanBeSavedWithAPI() throws {
-        try _test { app in
+        try _testAfterLoggedIn(loggedInRequest: true) { app, headers in
             let user = User.Create(name: usersName,
                                    username: usersUsername,
                                    password: "password")
+            var headers = headers
+            headers.add(name: "Content-Type", value: "application/json")
             try app
                 .test(
                     .POST,
                     usersURI,
-                    headers: .init([("Content-Type", "application/json")]),
+                    headers: headers,
                     beforeRequest: { request in
                         try request.content.encode(user)
                 },
@@ -47,10 +49,10 @@ final class UserTests: XCTestCase {
                         
                         try app.test(.GET, usersURI) { response in
                             let users = try response.content.decode([User.Public].self)
-                            XCTAssertEqual(users.count, 1)
-                            XCTAssertEqual(users[0].name, usersName)
-                            XCTAssertEqual(users[0].username, usersUsername)
-                            XCTAssertEqual(users[0].id, receivedUser.id)
+                            XCTAssertEqual(users.count, 2)
+                            XCTAssertEqual(users[1].name, usersName)
+                            XCTAssertEqual(users[1].username, usersUsername)
+                            XCTAssertEqual(users[1].id, receivedUser.id)
                         }
                 }
             )
@@ -89,7 +91,10 @@ final class UserTests: XCTestCase {
     
     // 保存した User を更新できるか確認
     func testUpdatingAnUser() throws {
-        try _test { app in
+        try _testAfterLoggedIn(loggedInRequest: true) { app, headers in
+            var headers = headers
+            headers.add(name: "Content-Type", value: "application/json")
+            
             let user = try User.create(name: usersName, username: usersUsername, on: app.db)
             let newUsername = "更新ユーザー名"
             let newPassword = "9999"
@@ -98,7 +103,20 @@ final class UserTests: XCTestCase {
                 .test(
                     .PUT,
                     "\(usersURI)\(user.id!)",
-                    headers: .init([("Content-Type", "application/json")]),
+                    beforeRequest: { request in
+                        try request.content.encode(updatedUser)
+                },
+                    afterResponse: { response in
+                        try app.test(.GET, "\(usersURI)\(user.id!)") { response in
+                            let returnedUser = try response.content.decode(User.Public.self)
+                            XCTAssertEqual(returnedUser.name, usersName)
+                            XCTAssertEqual(returnedUser.username, usersUsername)
+                        }
+                })
+                .test(
+                    .PUT,
+                    "\(usersURI)\(user.id!)",
+                    headers: headers,
                     beforeRequest: { request in
                         try request.content.encode(updatedUser)
                 },
@@ -114,7 +132,10 @@ final class UserTests: XCTestCase {
     
     // 保存した User を更新するとき、同じユーザー名が存在するとき更新しないか確認
     func testUpdatingErrorAnUser() throws {
-        try _test { app in
+        try _testAfterLoggedIn(loggedInRequest: true) { app, headers in
+            var headers = headers
+            headers.add(name: "Content-Type", value: "application/json")
+            
             let _ = try User.create(name: usersName, username: usersUsername, on: app.db)
             
             let oldName = "適当名"
@@ -128,7 +149,7 @@ final class UserTests: XCTestCase {
                 .test(
                     .PUT,
                     "\(usersURI)\(user.id!)",
-                    headers: .init([("Content-Type", "application/json")]),
+                    headers: headers,
                     beforeRequest: { request in
                         try request.content.encode(updatedUser)
                 },
@@ -137,11 +158,11 @@ final class UserTests: XCTestCase {
                         
                         try app.test(.GET, usersURI) { response in
                             let users = try response.content.decode([User.Public].self)
-                            XCTAssertEqual(users.count, 2)
-                            XCTAssertEqual(users[0].name, usersName)
-                            XCTAssertEqual(users[0].username, usersUsername)
-                            XCTAssertEqual(users[1].name, oldName)
-                            XCTAssertEqual(users[1].username, oldUsername)
+                            XCTAssertEqual(users.count, 3)
+                            XCTAssertEqual(users[1].name, usersName)
+                            XCTAssertEqual(users[1].username, usersUsername)
+                            XCTAssertEqual(users[2].name, oldName)
+                            XCTAssertEqual(users[2].username, oldUsername)
                         }
                 })
         }
@@ -149,17 +170,22 @@ final class UserTests: XCTestCase {
     
     // 保存した User を削除できるか確認
     func testDeletingAnUser() throws {
-        try _test { app in
+        try _testAfterLoggedIn(loggedInRequest: true) { app, headers in
             let user = try User.create(on: app.db)
-            try app.test(.GET, usersURI) { response in
+            try app.test(.GET, usersURI, headers: headers) { response in
                 var users = try response.content.decode([User.Public].self)
-                XCTAssertEqual(users.count, 1)
+                XCTAssertEqual(users.count, 2)
                 
                 try app
                     .test(.DELETE, "\(usersURI)\(user.id!)")
                     .test(.GET, usersURI) { response in
                         users = try response.content.decode([User.Public].self)
-                        XCTAssertEqual(users.count, 0)
+                        XCTAssertEqual(users.count, 2)
+                }
+                .test(.DELETE, "\(usersURI)\(user.id!)", headers: headers)
+                .test(.GET, usersURI) { response in
+                    users = try response.content.decode([User.Public].self)
+                    XCTAssertEqual(users.count, 1)
                 }
             }
         }
