@@ -12,15 +12,16 @@ struct UsersController: RouteCollection {
         usersRoute.delete(":user_id", use: deleteHandler)
     }
     
-    func getAllHandler(_ req: Request) throws -> EventLoopFuture<[User]> {
-        User.query(on: req.db).all()
+    func getAllHandler(_ req: Request) throws -> EventLoopFuture<[User.Public]> {
+        User.query(on: req.db).all().map { $0.map{ $0.convertToPublic() } }
     }
     
-    func getHandler(_ req: Request) throws -> EventLoopFuture<User> {
+    func getHandler(_ req: Request) throws -> EventLoopFuture<User.Public> {
         let userID = req.parameters.get("user_id", as: UUID.self)
         return User
             .find(userID, on: req.db)
             .unwrap(or: Abort(.notFound))
+            .convertToPublic()
     }
     
     func getBlogsHandler(_ req: Request) throws -> EventLoopFuture<[Blog]> {
@@ -31,24 +32,27 @@ struct UsersController: RouteCollection {
             .flatMap { $0.$blogs.query(on: req.db).all() }
     }
     
-    func createHandler(_ req: Request) throws -> EventLoopFuture<User> {
-        let data = try req.content.decode(User.self)
+    func createHandler(_ req: Request) throws -> EventLoopFuture<User.Public> {
+        let data = try req.content.decode(User.Create.self)
         return User
             .query(on: req.db)
             .filter(\.$username == data.username)
             .first()
             .guard({ $0 == nil }, else: Abort(.badRequest, reason: "その username は既に存在します。"))
-            .flatMap { _ in
-                let user: User = .init(name: data.name,
-                                       username: data.username,
-                                       password: data.password)
-                return user.save(on: req.db).map { user }
+            .flatMapThrowing { _ -> User in
+                .init(name: data.name,
+                      username: data.username,
+                      passwordHash: try Bcrypt.hash(data.password))
+                
+        }
+        .flatMap { user in
+            return user.save(on: req.db).map { user }.convertToPublic()
         }
     }
     
-    func updateHandler(_ req: Request) throws -> EventLoopFuture<User> {
+    func updateHandler(_ req: Request) throws -> EventLoopFuture<User.Public> {
         let userID = req.parameters.get("user_id", as: UUID.self)
-        let updateUserData = try req.content.decode(User.self)
+        let updateUserData = try req.content.decode(User.Create.self)
         let sameUsernameUser = User
             .query(on: req.db)
             .filter(\.$id != userID!)
@@ -66,11 +70,11 @@ struct UsersController: RouteCollection {
                 }
                 user.name = updateData.name
                 user.username = updateData.username
-                user.password = updateData.password
+                user.passwordHash = try Bcrypt.hash(updateData.password)
                 return user
         }
         .flatMap { user in
-            user.save(on: req.db).map{ user }
+            user.save(on: req.db).map{ user }.convertToPublic()
         }
     }
     

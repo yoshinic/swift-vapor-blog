@@ -13,8 +13,8 @@ final class User: Model, Content {
     @Field(key: "username")
     var username: String
     
-    @Field(key: "password")
-    var password: String
+    @Field(key: "password_hash")
+    var passwordHash: String
     
     @Children(for: \.$user)
     var blogs: [Blog]
@@ -31,11 +31,44 @@ final class User: Model, Content {
         id: User.IDValue? = nil,
         name: String,
         username: String,
-        password: String
+        passwordHash: String
     ) {
         self.id = id
         self.name = name
         self.username = username
-        self.password = password
+        self.passwordHash = passwordHash
+    }
+}
+
+extension User {
+    struct Public: Codable {
+        var id: UUID?
+        var name: String
+        var username: String
+        
+        init(id: UUID?, name: String, username: String) {
+            self.id = id
+            self.name = name
+            self.username = username
+        }
+    }
+}
+extension User.Public: Content {}
+extension User {
+    func convertToPublic() -> User.Public {
+        return User.Public(id: id, name: name, username: username)
+    }
+}
+extension EventLoopFuture where Value: User {
+    func convertToPublic() -> EventLoopFuture<User.Public> {
+        return self.map { $0.convertToPublic() }
+    }
+}
+
+extension User {
+    struct Create: Content {
+        var name: String
+        var username: String
+        var password: String
     }
 }

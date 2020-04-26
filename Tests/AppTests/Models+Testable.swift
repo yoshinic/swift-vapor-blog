@@ -34,7 +34,8 @@ extension User {
         } else {
             createUsername = UUID().uuidString
         }
-        let user = User(name: name, username: createUsername, password: "password")
+        let passwordHash = try Bcrypt.hash("password")
+        let user = User(name: name, username: createUsername, passwordHash: passwordHash)
         return try user.save(on: db).map { user }.wait()
     }
 }

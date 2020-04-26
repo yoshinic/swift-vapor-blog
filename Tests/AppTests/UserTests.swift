@@ -17,7 +17,7 @@ final class UserTests: XCTestCase {
             let user = try User.create(name: usersName, username: usersUsername, on: app.db)
             _ = try User.create(on: app.db)
             try app.test(.GET, usersURI) { response in
-                let users = try response.content.decode([User].self)
+                let users = try response.content.decode([User.Public].self)
                 XCTAssertEqual(users.count, 2)
                 XCTAssertEqual(users[0].name, usersName)
                 XCTAssertEqual(users[0].username, usersUsername)
@@ -28,9 +28,9 @@ final class UserTests: XCTestCase {
     
     func testUserCanBeSavedWithAPI() throws {
         try _test { app in
-            let user = User(name: usersName,
-                            username: usersUsername,
-                            password: "password")
+            let user = User.Create(name: usersName,
+                                   username: usersUsername,
+                                   password: "password")
             try app
                 .test(
                     .POST,
@@ -40,13 +40,13 @@ final class UserTests: XCTestCase {
                         try request.content.encode(user)
                 },
                     afterResponse: { response in
-                        let receivedUser = try response.content.decode(User.self)
+                        let receivedUser = try response.content.decode(User.Public.self)
                         XCTAssertEqual(receivedUser.name, usersName)
                         XCTAssertEqual(receivedUser.username, usersUsername)
                         XCTAssertNotNil(receivedUser.id)
                         
                         try app.test(.GET, usersURI) { response in
-                            let users = try response.content.decode([User].self)
+                            let users = try response.content.decode([User.Public].self)
                             XCTAssertEqual(users.count, 1)
                             XCTAssertEqual(users[0].name, usersName)
                             XCTAssertEqual(users[0].username, usersUsername)
@@ -61,7 +61,7 @@ final class UserTests: XCTestCase {
         try _test { app in
             let user = try User.create(name: usersName, username: usersUsername, on: app.db)
             try app.test(.GET, "\(usersURI)\(user.id!)") { response in
-                let receivedUser = try response.content.decode(User.self)
+                let receivedUser = try response.content.decode(User.Public.self)
                 XCTAssertEqual(receivedUser.name, usersName)
                 XCTAssertEqual(receivedUser.username, usersUsername)
                 XCTAssertEqual(receivedUser.id, user.id)
@@ -93,7 +93,7 @@ final class UserTests: XCTestCase {
             let user = try User.create(name: usersName, username: usersUsername, on: app.db)
             let newUsername = "更新ユーザー名"
             let newPassword = "9999"
-            let updatedUser = User(name: usersName, username: newUsername, password: newPassword)
+            let updatedUser = User.Create(name: usersName, username: newUsername, password: newPassword)
             try app
                 .test(
                     .PUT,
@@ -104,10 +104,9 @@ final class UserTests: XCTestCase {
                 },
                     afterResponse: { response in
                         try app.test(.GET, "\(usersURI)\(user.id!)") { response in
-                            let returnedUser = try response.content.decode(User.self)
+                            let returnedUser = try response.content.decode(User.Public.self)
                             XCTAssertEqual(returnedUser.name, usersName)
                             XCTAssertEqual(returnedUser.username, newUsername)
-                            XCTAssertEqual(returnedUser.password, newPassword)
                         }
                 })
         }
@@ -124,7 +123,7 @@ final class UserTests: XCTestCase {
             
             let newName = "更新名"
             let newPassword = "更新パスワード"
-            let updatedUser = User(name: newName, username: usersUsername, password: newPassword)
+            let updatedUser = User.Create(name: newName, username: usersUsername, password: newPassword)
             try app
                 .test(
                     .PUT,
@@ -137,7 +136,7 @@ final class UserTests: XCTestCase {
                         XCTAssertEqual(response.status, .badRequest)
                         
                         try app.test(.GET, usersURI) { response in
-                            let users = try response.content.decode([User].self)
+                            let users = try response.content.decode([User.Public].self)
                             XCTAssertEqual(users.count, 2)
                             XCTAssertEqual(users[0].name, usersName)
                             XCTAssertEqual(users[0].username, usersUsername)
@@ -153,13 +152,13 @@ final class UserTests: XCTestCase {
         try _test { app in
             let user = try User.create(on: app.db)
             try app.test(.GET, usersURI) { response in
-                var users = try response.content.decode([User].self)
+                var users = try response.content.decode([User.Public].self)
                 XCTAssertEqual(users.count, 1)
                 
                 try app
                     .test(.DELETE, "\(usersURI)\(user.id!)")
                     .test(.GET, usersURI) { response in
-                        users = try response.content.decode([User].self)
+                        users = try response.content.decode([User.Public].self)
                         XCTAssertEqual(users.count, 0)
                 }
             }
