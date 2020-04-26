@@ -18,10 +18,10 @@ final class UserTests: XCTestCase {
             _ = try User.create(on: app.db)
             try app.test(.GET, usersURI) { response in
                 let users = try response.content.decode([User.Public].self)
-                XCTAssertEqual(users.count, 2)
-                XCTAssertEqual(users[0].name, usersName)
-                XCTAssertEqual(users[0].username, usersUsername)
-                XCTAssertEqual(users[0].id, user.id)
+                XCTAssertEqual(users.count, 3)
+                XCTAssertEqual(users[1].name, usersName)
+                XCTAssertEqual(users[1].username, usersUsername)
+                XCTAssertEqual(users[1].id, user.id)
             }
         }
     }

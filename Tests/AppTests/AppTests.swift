@@ -29,31 +29,17 @@ extension XCTestCase {
         test: (Application, HTTPHeaders) throws -> Void
     ) throws {
         try _test { app in
-            
-            let adminName = "Admin"
-            let adminUsername = "admin"
-            let adminPassword = "password"
-            
-            let existedAdminUser
-                = try User.query(on: app.db).filter(\.$username == adminUsername).first().wait()
-            if existedAdminUser == nil {
-                let _ = try User.create(name: adminName,
-                                        username: adminUsername,
-                                        password: adminPassword,
-                                        on: app.db)
-            }
-            
             var headers: HTTPHeaders = .init()
             if (loggedInRequest || loggedInUser != nil) {
                 let username: String
                 if let user = loggedInUser {
                     username = user.username
                 } else {
-                    username = adminUsername
+                    username = "admin"
                 }
                 let credentials = BasicAuthorization(
                     username: username,
-                    password: adminPassword
+                    password: "password"
                 )
                 
                 var tokenHeaders = HTTPHeaders()
