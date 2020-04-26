@@ -51,6 +51,7 @@ struct UsersController: RouteCollection {
     }
     
     func createHandler(_ req: Request) throws -> EventLoopFuture<User.Public> {
+        try User.Create.validate(req)
         let data = try req.content.decode(User.Create.self)
         return User
             .query(on: req.db)

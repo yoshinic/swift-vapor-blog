@@ -31,6 +31,10 @@ final class UserTests: XCTestCase {
             let user = User.Create(name: usersName,
                                    username: usersUsername,
                                    password: "password")
+            let incorrectUser = User.Create(name: usersName,
+                                            username: usersUsername,
+                                            password: "passwor")
+            
             var headers = headers
             headers.add(name: "Content-Type", value: "application/json")
             try app
@@ -53,6 +57,22 @@ final class UserTests: XCTestCase {
                             XCTAssertEqual(users[1].name, usersName)
                             XCTAssertEqual(users[1].username, usersUsername)
                             XCTAssertEqual(users[1].id, receivedUser.id)
+                        }
+                }
+            )
+                .test(
+                    .POST,
+                    usersURI,
+                    headers: headers,
+                    beforeRequest: { request in
+                        try request.content.encode(incorrectUser)
+                },
+                    afterResponse: { response in
+                        do {
+                            let _ = try response.content.decode(User.Public.self)
+                            XCTAssert(false)
+                        } catch {
+                            XCTAssert(true)
                         }
                 }
             )
