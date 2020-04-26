@@ -23,6 +23,7 @@ final class BlogTests: XCTestCase {
                 XCTAssertEqual(blogs[0].title, blogTitle)
                 XCTAssertEqual(blogs[0].contents, blogContents)
                 XCTAssertEqual(blogs[0].id, blog1.id)
+                XCTAssertEqual(blogs[0].$user.id, blog1.$user.id)
             }
         }
     }
@@ -30,7 +31,8 @@ final class BlogTests: XCTestCase {
     // Blog が保存されるか確認
     func testBlogCanBeSavedWithAPI() throws {
         try _test { app in
-            let blog = Blog(title: blogTitle, contents: blogContents)
+            let newUser = try User.create(on: app.db)
+            let blog = Blog(title: blogTitle, contents: blogContents, userID: newUser.id!)
             try app
                 .test(
                     .POST,
@@ -44,6 +46,7 @@ final class BlogTests: XCTestCase {
                         XCTAssertEqual(receivedBlog.title, blogTitle)
                         XCTAssertEqual(receivedBlog.contents, blogContents)
                         XCTAssertNotNil(receivedBlog.id)
+                        XCTAssertNotNil(receivedBlog.$user.id)
                         
                         try app.test(.GET, blogsURI) { response in
                             let blogs = try response.content.decode([Blog].self)
@@ -51,6 +54,7 @@ final class BlogTests: XCTestCase {
                             XCTAssertEqual(blogs[0].title, blogTitle)
                             XCTAssertEqual(blogs[0].contents, blogContents)
                             XCTAssertEqual(blogs[0].id, receivedBlog.id)
+                            XCTAssertEqual(blogs[0].$user.id, receivedBlog.$user.id)
                         }
                 })
         }
@@ -65,6 +69,21 @@ final class BlogTests: XCTestCase {
                 XCTAssertEqual(returnedBlog.title, blogTitle)
                 XCTAssertEqual(returnedBlog.contents, blogContents)
                 XCTAssertEqual(returnedBlog.id, blog.id)
+                XCTAssertEqual(returnedBlog.$user.id, blog.$user.id)
+            }
+        }
+    }
+    
+    // Blog を作成したユーザーを取得できるか確認
+    func testGettingAnBlogsUser() throws {
+        try _test { app in
+            let user = try User.create(on: app.db)
+            let blog = try Blog.create(user: user, on: app.db)
+            try app.test(.GET, "\(blogsURI)\(blog.id!)/user") { response in
+                let blogsUser = try response.content.decode(User.self)
+                XCTAssertEqual(blogsUser.id, user.id)
+                XCTAssertEqual(blogsUser.name, user.name)
+                XCTAssertEqual(blogsUser.username, user.username)
             }
         }
     }
@@ -74,7 +93,8 @@ final class BlogTests: XCTestCase {
         try _test { app in
             let blog = try Blog.create(title: blogTitle, contents: blogContents, on: app.db)
             let newContents = "更新内容"
-            let updatedBlog = Blog(title: blogTitle, contents: newContents)
+            let newUser = try User.create(on: app.db)
+            let updatedBlog = Blog(title: blogTitle, contents: newContents, userID: newUser.id!)
             try app
                 .test(
                     .PUT,
@@ -88,6 +108,7 @@ final class BlogTests: XCTestCase {
                             let returnedBlog = try response.content.decode(Blog.self)
                             XCTAssertEqual(returnedBlog.title, blogTitle)
                             XCTAssertEqual(returnedBlog.contents, newContents)
+                            XCTAssertEqual(returnedBlog.$user.id, newUser.id!)
                         }
                 })
         }
@@ -115,6 +136,7 @@ final class BlogTests: XCTestCase {
         ("testBlogsCanBeRetrievedFromAPI", testBlogsCanBeRetrievedFromAPI),
         ("testBlogCanBeSavedWithAPI", testBlogCanBeSavedWithAPI),
         ("testGettingASingleBlogFromTheAPI", testGettingASingleBlogFromTheAPI),
+        ("testGettingAnBlogsUser", testGettingAnBlogsUser),
         ("testUpdatingAnBlog", testUpdatingAnBlog),
         ("testDeletingAnBlog", testDeletingAnBlog),
     ]

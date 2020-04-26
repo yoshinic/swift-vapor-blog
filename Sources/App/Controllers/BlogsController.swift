@@ -6,6 +6,7 @@ struct BlogsController: RouteCollection {
         let blogsRoutes = routes.grouped("api", "blogs")
         blogsRoutes.get(use: getAllHandler)
         blogsRoutes.get(":blog_id", use: getHandler)
+        blogsRoutes.get(":blog_id", "user", use: getUserHandler)
         blogsRoutes.post(use: createHandler)
         blogsRoutes.put(":blog_id", use: updateHandler)
         blogsRoutes.delete(":blog_id", use: deleteHandler)
@@ -21,9 +22,16 @@ struct BlogsController: RouteCollection {
             .unwrap(or: Abort(.notFound))
     }
     
+    func getUserHandler(_ req: Request) throws -> EventLoopFuture<User> {
+        Blog
+            .find(req.parameters.get("blog_id"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .flatMap { $0.$user.get(on: req.db) }
+    }
+    
     func createHandler(_ req: Request) throws -> EventLoopFuture<Blog> {
         let data = try req.content.decode(Blog.self)
-        let blog = Blog(title: data.title, contents: data.contents)
+        let blog = Blog(title: data.title, contents: data.contents, userID: data.$user.id)
         return blog.save(on: req.db).map{ blog }
     }
     
@@ -37,6 +45,7 @@ struct BlogsController: RouteCollection {
             .flatMapThrowing { blog, updateData throws -> Blog in
                 blog.title = updateData.title
                 blog.contents = updateData.contents
+                blog.$user.id = updateData.$user.id
                 return blog
         }
         .flatMap { blog in

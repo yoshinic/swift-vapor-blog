@@ -14,6 +14,9 @@ final class Blog: Model, Content {
     @Field(key: "contents")
     var contents: String?
     
+    @Parent(key: "user_id")
+    var user: User
+    
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
     
@@ -25,10 +28,12 @@ final class Blog: Model, Content {
     init(
         id: Blog.IDValue? = nil,
         title: String,
-        contents: String?
+        contents: String?,
+        userID: User.IDValue
     ) {
         self.id = id
         self.title = title
         self.contents = contents
+        self.$user.id = userID
     }
 }
