@@ -9,12 +9,14 @@ public func configure(_ app: Application) throws {
 
     app.databases.use(.postgres(
         hostname: Environment.get("DATABASE_HOST") ?? "localhost",
+        port: Int(Environment.get("DATABASE_PORT") ?? "5432")!,
         username: Environment.get("DATABASE_USERNAME") ?? "vapor_username",
         password: Environment.get("DATABASE_PASSWORD") ?? "vapor_password",
         database: Environment.get("DATABASE_NAME") ?? "vapor_database"
     ), as: .psql)
 
     app.migrations.add(CreateTodo())
+    try app.autoMigrate().wait()
 
     // register routes
     try routes(app)
