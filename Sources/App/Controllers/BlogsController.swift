@@ -5,6 +5,7 @@ struct BlogsController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let blogsRoutes = routes.grouped("api", "blogs")
         blogsRoutes.get(use: getAllHandler)
+        blogsRoutes.get(":blog_id", use: getHandler)
         blogsRoutes.post(use: createHandler)
         blogsRoutes.put(":blog_id", use: updateHandler)
         blogsRoutes.delete(":blog_id", use: deleteHandler)
@@ -12,6 +13,12 @@ struct BlogsController: RouteCollection {
     
     func getAllHandler(_ req: Request) throws -> EventLoopFuture<[Blog]> {
         Blog.query(on: req.db).all()
+    }
+    
+    func getHandler(_ req: Request) throws -> EventLoopFuture<Blog> {
+        Blog
+            .find(req.parameters.get("blog_id"), on: req.db)
+            .unwrap(or: Abort(.notFound))
     }
     
     func createHandler(_ req: Request) throws -> EventLoopFuture<Blog> {
