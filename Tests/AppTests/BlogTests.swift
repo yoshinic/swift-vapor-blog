@@ -1,6 +1,5 @@
 @testable import App
 import XCTVapor
-import FluentPostgresDriver
 
 final class BlogTests: XCTestCase {
     
@@ -154,6 +153,37 @@ final class BlogTests: XCTestCase {
         }
     }
     
+    func testBlogsTags() throws {
+        try _testAfterLoggedIn(loggedInRequest: true) { app, headers in
+            let tag = try Tag.create(on: app.db)
+            let tag2 = try Tag.create(name: "swift", on: app.db)
+            let blog = try Blog.create(on: app.db)
+            
+            let request1URL = "\(blogsURI)\(blog.id!)/tags/\(tag.id!)"
+            let request2URL = "\(blogsURI)\(blog.id!)/tags/\(tag2.id!)"
+            
+            try app
+                .test(.POST, request1URL, headers: headers)
+                .test(.POST, request2URL, headers: headers)
+                .test(.GET, "\(blogsURI)\(blog.id!)/tags") { response in
+                    let tags = try response.content.decode([App.Tag].self)
+                    XCTAssertEqual(tags.count, 2)
+                    XCTAssertEqual(tags[0].id, tag.id)
+                    XCTAssertEqual(tags[0].name, tag.name)
+                    XCTAssertEqual(tags[1].id, tag2.id)
+                    XCTAssertEqual(tags[1].name, tag2.name)
+                    
+                    let request3URL = "\(blogsURI)\(blog.id!)/tags/\(tag.id!)"
+                    try app
+                        .test(.DELETE, request3URL, headers: headers)
+                        .test(.GET, "\(blogsURI)\(blog.id!)/tags") { response in
+                            let newTags = try response.content.decode([App.Tag].self)
+                            XCTAssertEqual(newTags.count, 1)
+                    }
+            }
+        }
+    }
+    
     static let allTests = [
         ("testBlogsCanBeRetrievedFromAPI", testBlogsCanBeRetrievedFromAPI),
         ("testBlogCanBeSavedWithAPI", testBlogCanBeSavedWithAPI),
@@ -161,5 +191,6 @@ final class BlogTests: XCTestCase {
         ("testGettingAnBlogsUser", testGettingAnBlogsUser),
         ("testUpdatingAnBlog", testUpdatingAnBlog),
         ("testDeletingAnBlog", testDeletingAnBlog),
+        ("testBlogsTags", testBlogsTags)
     ]
 }

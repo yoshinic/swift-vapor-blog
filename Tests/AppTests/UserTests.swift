@@ -1,6 +1,5 @@
 @testable import App
 import XCTVapor
-import FluentPostgresDriver
 
 final class UserTests: XCTestCase {
     

@@ -40,3 +40,19 @@ extension User {
         return try user.save(on: db).map { user }.wait()
     }
 }
+
+extension Tag {
+    static func create(
+        name: String? = nil,
+        on db: Database
+    ) throws -> Tag {
+        let createTagName: String
+        if let suppliedUsername = name {
+            createTagName = suppliedUsername
+        } else {
+            createTagName = UUID().uuidString
+        }
+        let tag = Tag(name: createTagName)
+        return try tag.save(on: db).map { tag }.wait()
+    }
+}

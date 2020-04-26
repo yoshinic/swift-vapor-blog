@@ -17,6 +17,9 @@ final class Blog: Model, Content {
     @Parent(key: "user_id")
     var user: User
     
+    @Siblings(through: BlogTagPivot.self, from: \.$blog, to: \.$tag)
+    var tags: [Tag]
+    
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
     

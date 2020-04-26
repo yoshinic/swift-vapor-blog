@@ -15,9 +15,11 @@ public func configure(_ app: Application) throws {
         database: Environment.get("DATABASE_NAME") ?? "vapor_database"
     ), as: .psql)
 
+    app.migrations.add(CreateTag())
     app.migrations.add(CreateUser())
     app.migrations.add(CreateAdminUser())
     app.migrations.add(CreateBlog())
+    app.migrations.add(CreateBlogTagPivot())
     app.migrations.add(CreateUserToken())
     try app.autoMigrate().wait()
 
