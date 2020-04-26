@@ -10,4 +10,7 @@ func routes(_ app: Application) throws {
     
     let tagsController: TagsController = .init()
     try app.register(collection: tagsController)
+    
+    let websiteController: WebsiteController = .init()
+    try app.register(collection: websiteController)
 }
