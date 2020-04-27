@@ -1,0 +1,33 @@
+#extend("base"):
+  
+  #export("css"):
+
+  #endexport
+
+  #export("body"):
+    <h1>ユーザー一覧</h1>
+
+    #if(userCounts > 0):
+      <table>
+        <thead>
+          <tr>
+            <th>ユーザー名</th><th>名前</th>
+          </tr>
+        </thead>
+        <tbody>
+          #for(user in users):
+            <tr>
+              <td>#(user.username)</a></td>
+              <td>#(user.name)</td>
+            </tr>
+          #endfor
+        </tbody>
+      </table>
+    #else:
+      <h2>ユーザーが作成されていません</h2>
+    #endif
+
+    <button type="button" onclick="history.back()">戻る</button>
+  #endexport
+
+#endextend

@@ -1,11 +1,33 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>#(title)</title>
-  </head>
-  <body>
-    <h1>#(body)</h1>
-  </body>
-</html>
+#extend("base"):
+  
+  #export("css"):
+    <link rel="stylesheet" href="/my.css">  
+  #endexport
+
+  #export("body"):
+    <header>
+      <nav>
+        <ul>
+          <li>
+            <a href="/">トップ</a>
+          </li>
+          <li>
+            <a href="/users">ユーザー一覧</a>
+          </li>
+          <li>
+            <a href="/register">新規登録</a>
+          </li>
+        </ul>
+      </nav>
+    </header>
+    
+    <main>
+
+    </main>
+    
+    <footer>
+    
+    </footer>
+  #endexport
+
+#endextend
