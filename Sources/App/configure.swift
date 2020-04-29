@@ -7,10 +7,14 @@ import Leaf
 public func configure(_ app: Application) throws {
     // uncomment to serve files from /Public folder
      app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+    app.middleware.use(SessionsMiddleware(session: app.sessions.driver))
     
     // Configure Leaf
     app.views.use(.leaf)
     app.leaf.cache.isEnabled = app.environment.isRelease
+    
+    // Password
+    app.passwords.use(.bcrypt(cost: 15))
     
     app.databases.use(.postgres(
         hostname: Environment.get("DATABASE_HOST") ?? "localhost",
@@ -26,6 +30,9 @@ public func configure(_ app: Application) throws {
     app.migrations.add(CreateBlog())
     app.migrations.add(CreateBlogTagPivot())
     app.migrations.add(CreateUserToken())
+    // use fluent session
+    app.sessions.use(.fluent)
+    app.migrations.add(SessionRecord.migration)
     try app.autoMigrate().wait()
     
     // register routes

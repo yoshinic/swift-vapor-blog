@@ -106,3 +106,47 @@ extension User.Create: Validatable {
         validations.add("password", as: String.self, is: .count(8...))
     }
 }
+
+struct UserCredentialsAuthenticator: CredentialsAuthenticator {
+    struct Input: Content {
+        let username: String
+        let password: String
+    }
+    
+    typealias Credentials = Input
+    
+    func authenticate(credentials: Credentials, for req: Request) -> EventLoopFuture<Void> {
+        User.query(on: req.db)
+            .filter(\.$username == credentials.username)
+            .first()
+            .unwrap(or: Abort(.unauthorized))
+            .flatMap { user in
+                req.password.async.verify(credentials.password, created: user.passwordHash).map { pass in
+                    if pass {
+                        req.auth.login(user)
+                    }
+                }
+        }
+    }
+}
+
+extension User: SessionAuthenticatable {
+    typealias SessionID = String
+    var sessionID: String {
+        return self.username
+    }
+}
+struct UserSessionAuthenticator: SessionAuthenticator {
+    typealias User = App.User
+    func authenticate(sessionID: User.SessionID, for request: Request) -> EventLoopFuture<Void> {
+        User
+            .query(on: request.db)
+            .filter(\.$username == sessionID)
+            .first()
+            .map {
+                if let user = $0 {
+                    request.auth.login(user)
+                }
+        }
+    }
+}

@@ -59,43 +59,29 @@ struct UsersController: RouteCollection {
             .query(on: req.db)
             .filter(\.$username == data.username)
             .first()
-            .guard({ $0 == nil }, else: Abort(.badRequest, reason: "その username は既に存在します。"))
-            .flatMapThrowing { _ -> User in
-                .init(name: data.name,
-                      username: data.username,
-                      passwordHash: try Bcrypt.hash(data.password))
-                
-        }
-        .flatMap { user in
-            return user.save(on: req.db).map { user }.convertToPublic()
-        }
+            .guard({ $0 == nil }, else: Abort(.badRequest, reason: "そのユーザー名は既に登録されています。"))
+            .flatMap { _ in req.password.async.hash(data.password) }
+            .map { User(name: data.name, username: data.username, passwordHash: $0) }
+            .flatMap { user in user.save(on: req.db).map { user }.convertToPublic() }
     }
     
     func updateHandler(_ req: Request) throws -> EventLoopFuture<User.Public> {
         let userID = req.parameters.get("user_id", as: User.IDValue.self)
         let updateUserData = try req.content.decode(User.Create.self)
-        let sameUsernameUser = User
+        return User
             .query(on: req.db)
             .filter(\.$id != userID!)
             .filter(\.$username == updateUserData.username)
             .first()
-        return User
-            .find(userID, on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .and(value: updateUserData)
-            .and(sameUsernameUser)
-            .flatMapThrowing { v throws -> User in
-                let ((user, updateData), sameUser) = v
-                guard sameUser == nil else {
-                    throw Abort(.badRequest, reason: "その username は既に存在します。")
+            .guard({ $0 != nil }, else: Abort(.badRequest, reason: "そのユーザー名は既に登録されています。"))
+            .flatMap { _ in User.find(userID, on: req.db).unwrap(or: Abort(.notFound)) }
+            .flatMap { user in
+                req.password.async.hash(updateUserData.password).flatMap { passwordHash in
+                    user.name = updateUserData.name
+                    user.username = updateUserData.username
+                    user.passwordHash = passwordHash
+                    return user.save(on: req.db).map{ user }.convertToPublic()
                 }
-                user.name = updateData.name
-                user.username = updateData.username
-                user.passwordHash = try Bcrypt.hash(updateData.password)
-                return user
-        }
-        .flatMap { user in
-            user.save(on: req.db).map{ user }.convertToPublic()
         }
     }
     

@@ -17,6 +17,19 @@
           <li>
             <a href="/register">新規登録</a>
           </li>
+          
+          #if(userLoggedIn == false):
+            <li>
+              <a href="/login">ログイン</a>
+            </li>
+          #elseif(userLoggedIn == true):
+            <li>
+              <form action="/logout" method="POST">
+                <input type="submit" value="Log out">
+              </form>
+            </li>
+          #endif
+          
         </ul>
       </nav>
     </header>

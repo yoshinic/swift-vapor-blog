@@ -1,0 +1,35 @@
+#extend("base"):
+  
+  #export("css"):
+
+  #endexport
+
+  #export("body"):
+    <h1>#(title)</h1>
+
+    #if(loginError):
+      <div role="alert">
+        認証エラー。ユーザー名かパスワードが正しくありません。
+      </div>
+    #endif
+
+    <form action="/login" method="post">
+      <div>
+        <label>ユーザー名</label>
+        <input type="text" name="username"/>
+      </div>
+
+      <div>
+        <label>パスワード</label>
+        <input type="password" name="password"/>
+      </div>
+
+      <button type="submit">ログイン</button>
+      <button type="button" onclick="history.back()">戻る</button>
+    </form>
+  #endexport
+
+  #export("scripts"):
+  #endexport
+  
+#endextend
