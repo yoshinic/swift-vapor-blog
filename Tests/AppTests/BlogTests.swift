@@ -33,7 +33,7 @@ final class BlogTests: XCTestCase {
             var headers = headers
             headers.add(name: "Content-Type", value: "application/json")
             let newUser = try User.create(on: app.db)
-            let blog = Blog(title: blogTitle, contents: blogContents, userID: newUser.id!)
+            let blog = Blog(pictureBase64: "", title: blogTitle, contents: blogContents, userID: newUser.id!)
             try app
                 .test(
                     .POST,
@@ -97,7 +97,7 @@ final class BlogTests: XCTestCase {
             let blog = try Blog.create(title: blogTitle, contents: blogContents, on: app.db)
             let newContents = "更新内容"
             let newUser = try User.create(on: app.db)
-            let updatedBlog = Blog(title: blogTitle, contents: newContents, userID: newUser.id!)
+            let updatedBlog = Blog(pictureBase64: "", title: blogTitle, contents: newContents, userID: newUser.id!)
             try app
                 .test(
                     .PUT,

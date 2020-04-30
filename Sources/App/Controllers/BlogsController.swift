@@ -49,7 +49,10 @@ struct BlogsController: RouteCollection {
     
     func createHandler(_ req: Request) throws -> EventLoopFuture<Blog> {
         let data = try req.content.decode(Blog.self)
-        let blog = Blog(title: data.title, contents: data.contents, userID: data.$user.id)
+        let blog: Blog = .init(pictureBase64: data.pictureBase64 ?? "",
+                               title: data.title,
+                               contents: data.contents,
+                               userID: data.$user.id)
         return blog.save(on: req.db).map{ blog }
     }
     

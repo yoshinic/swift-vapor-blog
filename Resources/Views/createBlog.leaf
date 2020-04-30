@@ -7,7 +7,7 @@
   #export("body"):
     <h1>#(title)</h1>
 
-    <form method="post">
+    <form method="post" onsubmit="setBlogData()">
       #if(csrfToken):
         <input type="hidden" id="csrfToken" name="csrfToken" value="#(csrfToken)">
       #endif
@@ -17,7 +17,14 @@
         <input type="text" id="title" name="title" #if(editing):value="#(blog.title)"#endif/>
       </div>
       
-      <div class="form-group">
+      <div>
+          <label>画像</label>
+          <input type="file" id="picture" name="picture" accept="image/*"/>
+          <input type="hidden" id="pictureBase64" name="pictureBase64" value=""/>
+          <img id="preview">
+      </div>
+      
+      <div>
         <label for="tags">タグ</label>
         <select id="tags" name="tags" class="form-control" placeholder="タグを入力して下さい" multiple="multiple" style="width: 400px;">
           #if(editing):
@@ -47,6 +54,7 @@
     <script src="/scripts/jquery-3.5.0.min.js"></script>
     <script src="/scripts/select2-4.0.13.full.min.js"></script>
     <script src="/scripts/select2Handlers.js"></script>
+    <script src="/scripts/picture.js"></script>
   #endexport
   
 #endextend

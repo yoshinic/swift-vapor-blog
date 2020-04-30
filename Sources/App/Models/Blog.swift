@@ -8,6 +8,9 @@ final class Blog: Model, Content {
     @ID(key: .id)
     var id: UUID?
     
+    @Field(key: "picture_base64")
+    var pictureBase64: String?
+    
     @Field(key: "title")
     var title: String
     
@@ -30,11 +33,13 @@ final class Blog: Model, Content {
     
     init(
         id: Blog.IDValue? = nil,
+        pictureBase64: String?,
         title: String,
         contents: String?,
         userID: User.IDValue
     ) {
         self.id = id
+        self.pictureBase64 = pictureBase64
         self.title = title
         self.contents = contents
         self.$user.id = userID

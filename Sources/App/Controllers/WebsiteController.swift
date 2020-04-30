@@ -119,7 +119,8 @@ struct WebsiteController: RouteCollection {
             throw Abort(.badRequest)
         }
         let userLoggedIn = try req.auth.require(User.self)
-        let blog = Blog(title: data.title,
+        let blog = Blog(pictureBase64: data.pictureBase64,
+                        title: data.title,
                         contents: data.contents,
                         userID: try userLoggedIn.requireID())
         return blog
@@ -226,7 +227,7 @@ struct BlogContext: Encodable {
     let title: String
     let blog: Blog
     let user: User
-    let tags: [Tag]
+    let tags: [Tag]?
     let authenticatedUser: User?
 }
 
@@ -261,6 +262,7 @@ struct CreateBlogContext: Encodable {
 }
 
 struct CreateBlogData: Decodable {
+    let pictureBase64: String?
     let title: String
     let contents: String
     let tags: [String]?
@@ -271,5 +273,5 @@ struct EditBlogContext: Encodable {
     let title = "ブログ編集"
     let blog: Blog
     let editing = true
-    let tags: [Tag]
+    let tags: [Tag]?
 }

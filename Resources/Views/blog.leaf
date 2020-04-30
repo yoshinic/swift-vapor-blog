@@ -10,6 +10,10 @@
         <p>##(tag.name)<p>
       #endfor
     <p>作成者:<a href="/users/#(user.id)/">#(user.name)</a></p>
+    
+    <img src="#(blog.pictureBase64)" alt="">
+    <br>
+    
     <textarea readonly name="contents" cols="100" rows="10">#(blog.contents)</textarea>
     <br>
     #if(authenticatedUser.username == user.username):
