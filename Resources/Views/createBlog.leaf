@@ -1,0 +1,44 @@
+#extend("base"):
+  
+  #export("css"):
+    <link rel="stylesheet" href="/css/select2-4.0.13.min.css">
+  #endexport
+
+  #export("body"):
+    <h1>#(title)</h1>
+
+    <form method="post">
+      #if(csrfToken):
+        <input type="hidden" id="csrfToken" name="csrfToken" value="#(csrfToken)">
+      #endif
+      
+      <div>
+        <label for="title">タイトル</label>
+        <input type="text" id="title" name="title" #if(editing):value="#(blog.title)"#endif/>
+      </div>
+      
+      <div class="form-group">
+        <label for="tags">タグ</label>
+        <select id="tags" name="tags" class="form-control" placeholder="タグを入力して下さい" multiple="multiple" style="width: 400px;">
+        </select>
+      </div>
+      
+      <div>
+        <textarea name="contents" cols="100" rows="10"></textarea>
+      </div>
+      
+      <div>
+        <button type="submit">送信</button>
+        <button type="button" onclick="history.back()">戻る</button>
+      </div>
+    </form>
+  #endexport
+
+  #export("scripts"):
+    <script src="/scripts/jquery-3.5.0.min.js"></script>
+    <script src="/scripts/select2-4.0.13.full.min.js"></script>
+    <script src="/scripts/select2Handlers.js"></script>
+  #endexport
+  
+#endextend
+

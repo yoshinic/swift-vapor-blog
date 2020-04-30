@@ -8,5 +8,6 @@
   </head>
   <body>
     #import("body")
+    #import("scripts")
   </body>
 </html>

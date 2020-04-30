@@ -1,7 +1,7 @@
 #extend("base"):
   
   #export("css"):
-    <link rel="stylesheet" href="/my.css">  
+    <link rel="stylesheet" href="/css/my.css">  
   #endexport
 
   #export("body"):
@@ -13,6 +13,9 @@
           </li>
           <li>
             <a href="/users">ユーザー一覧</a>
+          </li>
+          <li>
+            <a href="/blogs/create">ブログ作成</a>
           </li>
           <li>
             <a href="/register">新規登録</a>
@@ -43,4 +46,6 @@
     </footer>
   #endexport
 
+  #export("scripts"):
+  #endexport
 #endextend

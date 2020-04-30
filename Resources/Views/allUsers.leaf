@@ -17,7 +17,7 @@
         <tbody>
           #for(user in users):
             <tr>
-              <td>#(user.username)</a></td>
+              <td><a href="/users/#(user.id)">#(user.username)</a></td>
               <td>#(user.name)</td>
             </tr>
           #endfor
@@ -30,4 +30,6 @@
     <button type="button" onclick="history.back()">戻る</button>
   #endexport
 
+  #export("scripts"):
+  #endexport
 #endextend

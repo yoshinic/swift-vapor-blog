@@ -30,4 +30,6 @@
     </form>
   #endexport
 
+  #export("scripts"):
+  #endexport
 #endextend
