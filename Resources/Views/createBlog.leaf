@@ -20,15 +20,24 @@
       <div class="form-group">
         <label for="tags">タグ</label>
         <select id="tags" name="tags" class="form-control" placeholder="タグを入力して下さい" multiple="multiple" style="width: 400px;">
+          #if(editing):
+            #for(tag in tags):
+              <option value="#(tag.name)" selected="selected">#(tag.name)</option>
+            #endfor
+           #endif
         </select>
       </div>
       
       <div>
-        <textarea name="contents" cols="100" rows="10"></textarea>
+        <textarea name="contents" cols="100" rows="10">#if(editing):#(blog.contents)#endif</textarea>
       </div>
       
       <div>
-        <button type="submit">送信</button>
+        <button type="submit">
+          #if(editing):更新
+          #else:送信
+          #endif
+        </button>
         <button type="button" onclick="history.back()">戻る</button>
       </div>
     </form>

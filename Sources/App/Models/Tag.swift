@@ -29,7 +29,7 @@ final class Tag: Model, Content {
 }
 
 extension Tag {
-    static func addTag(_ name: String, to blog: Blog, on req: Request) throws -> EventLoopFuture<Void> {
+    static func addTag(_ name: String, to blog: Blog, on req: Request) -> EventLoopFuture<Void> {
         return Tag
             .query(on: req.db)
             .filter(\.$name == name)

@@ -12,7 +12,13 @@
     <p>作成者:<a href="/users/#(user.id)/">#(user.name)</a></p>
     <textarea readonly name="contents" cols="100" rows="10">#(blog.contents)</textarea>
     <br>
-    <a href="/">戻る</a>
+    #if(authenticatedUser.username == user.username):
+      <form method="post" action="/blogs/#(blog.id)/delete">
+        <a href="/blogs/#(blog.id)/edit" role="button">編集</a>&nbsp;
+        <input type="submit" value="Delete" />
+      </form>
+    #endif
+    <button type="button" onclick="history.back()">戻る</button>
   #endexport
 
   #export("scripts"):

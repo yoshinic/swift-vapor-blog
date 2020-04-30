@@ -16,6 +16,9 @@ struct WebsiteController: RouteCollection {
         let protectedRoutes = authSessionRoutes.grouped(User.redirectMiddleware(path: "/login"))
         protectedRoutes.get("blogs", "create", use: createBlogHandler)
         protectedRoutes.post("blogs", "create", use: createBlogPostHandler)
+        protectedRoutes.get("blogs", ":blog_id", "edit", use: editBlogHandler)
+        protectedRoutes.post("blogs", ":blog_id", "edit", use: editBlogPostHandler)
+        protectedRoutes.post("blogs", ":blog_id", "delete", use: deleteBlogHandler)
         
         let passwordProtected = authSessionRoutes.grouped(UserCredentialsAuthenticator())
         passwordProtected.post("login", use: loginPostHandler)
@@ -55,11 +58,14 @@ struct WebsiteController: RouteCollection {
                     .$user
                     .get(on: req.db)
                     .and(blog.$tags.query(on: req.db).all())
-                    .flatMap { user, tags in
-                        let context = BlogContext(title: blog.title,
-                                                  blog: blog,
-                                                  user: user,
-                                                  tags: tags)
+                    .and(value: req.auth.get(User.self))
+                    .flatMap {
+                        let ((user, tags), authenticatedUser) = $0
+                        let context: BlogContext = .init(title: blog.title,
+                                                         blog: blog,
+                                                         user: user,
+                                                         tags: tags,
+                                                         authenticatedUser: authenticatedUser)
                         return req.view.render("blog", context)
                 }
         }
@@ -123,7 +129,7 @@ struct WebsiteController: RouteCollection {
                 guard let savedBlogId = savedBlog.id else { throw Abort(.internalServerError) }
                 var tagSaves: [EventLoopFuture<Void>] = []
                 for tag in data.tags ?? [] {
-                    try tagSaves.append(
+                    tagSaves.append(
                         Tag.addTag(tag, to: savedBlog, on: req))
                 }
                 return (tagSaves, savedBlogId)
@@ -131,6 +137,70 @@ struct WebsiteController: RouteCollection {
         .flatMap { (tagSaves: [EventLoopFuture<Void>], savedBlogId: Blog.IDValue) -> EventLoopFuture<Response> in
             let redirect = req.redirect(to: "/blogs/\(savedBlogId)")
             return tagSaves.flatten(on: req.eventLoop).transform(to: redirect)
+        }
+    }
+    
+    func editBlogHandler(_ req: Request) throws -> EventLoopFuture<View> {
+        return Blog
+            .find(req.parameters.get("blog_id"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .and(value: req.auth.get(User.self))
+            .flatMap { (blog: Blog, user: User?) in
+                blog.$tags.query(on: req.db).all().flatMap { tags in
+                    let context: EditBlogContext = .init(blog: blog, tags: tags)
+                    return req.view.render("createBlog", context)
+                }
+        }
+    }
+    
+    func editBlogPostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+        return Blog
+            .find(req.parameters.get("blog_id"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .and(value: try req.content.decode(CreateBlogData.self))
+            .and(value: try req.auth.require(User.self))
+            .flatMap {
+                let ((blog, createBlogData), user) = $0
+                blog.title = createBlogData.title
+                blog.contents = createBlogData.contents
+                blog.$user.id = user.id!
+                
+                return blog.save(on: req.db).map { blog }.flatMap { blog in
+                    blog.$tags.query(on: req.db).all()
+                        .flatMap { (existingTags: [Tag]) -> EventLoopFuture<Response> in
+                            let existingSet = Set<String>(existingTags.map { $0.name })
+                            let newSet = Set<String>(createBlogData.tags ?? [])
+                            let tagsToAdd = newSet.subtracting(existingSet)
+                            let tagsToRemove = existingSet.subtracting(newSet)
+                            var tagResults: [EventLoopFuture<Void>] = []
+                            tagsToAdd.forEach { newTag in
+                                tagResults.append(Tag.addTag(newTag, to: blog, on: req))
+                            }
+                            tagsToRemove.forEach { tagNameToRemove in
+                                let tagToRemove = existingTags.first { $0.name == tagNameToRemove }
+                                if let tag = tagToRemove {
+                                    tagResults.append(blog.$tags.detach(tag, on: req.db))
+                                }
+                            }
+                            
+                            let redirect = req.redirect(to: "/blogs/\(blog.id!)")
+                            return tagResults.flatten(on: req.eventLoop).transform(to: redirect)
+                    }
+                }
+        }
+    }
+    
+    func deleteBlogHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+        Blog
+            .find(req.parameters.get("blog_id"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .flatMap { blog in
+                blog.$tags
+                    .get(reload: true, on: req.db)
+                    .flatMap { blog.$tags.detach($0, on: req.db) }
+                    .flatMap { blog.delete(on: req.db) }
+                    .and(value: req.auth.get(User.self))
+                    .map { req.redirect(to: "/users/\($0.1!.id!)") }
         }
     }
 }
@@ -157,6 +227,7 @@ struct BlogContext: Encodable {
     let blog: Blog
     let user: User
     let tags: [Tag]
+    let authenticatedUser: User?
 }
 
 struct LoginContext: Encodable {
@@ -194,4 +265,11 @@ struct CreateBlogData: Decodable {
     let contents: String
     let tags: [String]?
     let csrfToken: String?
+}
+
+struct EditBlogContext: Encodable {
+    let title = "ブログ編集"
+    let blog: Blog
+    let editing = true
+    let tags: [Tag]
 }
