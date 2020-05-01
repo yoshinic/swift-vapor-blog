@@ -13,12 +13,11 @@
       #endfor
     <p>作成者:<a href="/users/#(user.id)/">#(user.name)</a></p>
     
-    <div>
-      <label for="picture">挿し絵</label>
-      <input type="file" id="picture" name="picture" accept="image/*" class="form-control-file"/>
-      <input type="hidden" id="pictureBase64" name="pictureBase64" value=""/>
-      <img id="preview">
-    </div>
+    #if(blog.pictureBase64 != "null"):
+      <div>
+        <img src="#(blog.pictureBase64)" alt="" style="height: 500px; width: 100%; object-fit: cover;">
+      </div>
+    #endif
     
     <div>
       <input type="hidden" id="editor" name="editor" value=""/>
