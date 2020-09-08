@@ -5,9 +5,9 @@ struct BlogsController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let blogsRoutes = routes.grouped("api", "blogs")
         blogsRoutes.get(use: getAllHandler)
-        blogsRoutes.get(":blog_id", use: getHandler)
-        blogsRoutes.get(":blog_id", "user", use: getUserHandler)
-        blogsRoutes.get(":blog_id", "tags", use: getTagsHandler)
+        blogsRoutes.get(":\(FieldKey.blogID.description)", use: getHandler)
+        blogsRoutes.get(":\(FieldKey.blogID.description)", "user", use: getUserHandler)
+        blogsRoutes.get(":\(FieldKey.blogID.description)", "tags", use: getTagsHandler)
         
         let tokenAuthGroup = blogsRoutes.grouped(
             UserToken.authenticator(database: .psql),
@@ -15,10 +15,10 @@ struct BlogsController: RouteCollection {
         )
         
         tokenAuthGroup.post(use: createHandler)
-        tokenAuthGroup.put(":blog_id", use: updateHandler)
-        tokenAuthGroup.delete(":blog_id", use: deleteHandler)
-        tokenAuthGroup.post(":blog_id", "tags", ":tag_id", use: addTagsHandler)
-        tokenAuthGroup.delete(":blog_id", "tags", ":tag_id", use: removeTagsHandler)
+        tokenAuthGroup.put(":\(FieldKey.blogID.description)", use: updateHandler)
+        tokenAuthGroup.delete(":\(FieldKey.blogID.description)", use: deleteHandler)
+        tokenAuthGroup.post(":\(FieldKey.blogID.description)", "tags", ":\(FieldKey.tagID.description)", use: addTagsHandler)
+        tokenAuthGroup.delete(":\(FieldKey.blogID.description)", "tags", ":\(FieldKey.tagID.description)", use: removeTagsHandler)
     }
     
     func getAllHandler(_ req: Request) throws -> EventLoopFuture<[Blog]> {
@@ -27,20 +27,20 @@ struct BlogsController: RouteCollection {
     
     func getHandler(_ req: Request) throws -> EventLoopFuture<Blog> {
         Blog
-            .find(req.parameters.get("blog_id"), on: req.db)
+            .find(req.parameters.get(FieldKey.blogID.description), on: req.db)
             .unwrap(or: Abort(.notFound))
     }
     
     func getUserHandler(_ req: Request) throws -> EventLoopFuture<User> {
         Blog
-            .find(req.parameters.get("blog_id"), on: req.db)
+            .find(req.parameters.get(FieldKey.blogID.description), on: req.db)
             .unwrap(or: Abort(.notFound))
             .flatMap { $0.$user.get(on: req.db) }
     }
     
     func getTagsHandler(_ req: Request) throws -> EventLoopFuture<[Tag]> {
         Blog
-            .find(req.parameters.get("blog_id"), on: req.db)
+            .find(req.parameters.get(FieldKey.blogID.description), on: req.db)
             .unwrap(or: Abort(.notFound))
             .flatMap { blog -> EventLoopFuture<[Tag]> in
                 blog.$tags.query(on: req.db).all()
@@ -57,7 +57,7 @@ struct BlogsController: RouteCollection {
     }
     
     func updateHandler(_ req: Request) throws -> EventLoopFuture<Blog> {
-        let blogID = req.parameters.get("blog_id", as: Blog.IDValue.self)
+        let blogID = req.parameters.get(FieldKey.blogID.description, as: Blog.IDValue.self)
         let updateBlogData = try req.content.decode(Blog.self)
         return Blog
             .find(blogID, on: req.db)
@@ -75,9 +75,8 @@ struct BlogsController: RouteCollection {
     }
     
     func deleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-        let blogID = req.parameters.get("blog_id", as: Blog.IDValue.self)
-        return Blog
-            .find(blogID, on: req.db)
+        Blog
+            .find(req.parameters.get(FieldKey.blogID.description), on: req.db)
             .unwrap(or: Abort(.notFound))
             .flatMap { blog -> EventLoopFuture<HTTPResponseStatus> in
                 blog.delete(on: req.db).transform(to: .ok)
@@ -85,8 +84,8 @@ struct BlogsController: RouteCollection {
     }
     
     func addTagsHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-        let blog = Blog.find(req.parameters.get("blog_id"), on: req.db).unwrap(or: Abort(.notFound))
-        let tag = Tag.find(req.parameters.get("tag_id"), on: req.db).unwrap(or: Abort(.notFound))
+        let blog = Blog.find(req.parameters.get(FieldKey.blogID.description), on: req.db).unwrap(or: Abort(.notFound))
+        let tag = Tag.find(req.parameters.get(FieldKey.tagID.description), on: req.db).unwrap(or: Abort(.notFound))
         return blog
             .and(tag)
             .flatMap { (blog, tag) -> EventLoopFuture<HTTPResponseStatus> in
@@ -95,8 +94,8 @@ struct BlogsController: RouteCollection {
     }
     
     func removeTagsHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-        let blog = Blog.find(req.parameters.get("blog_id"), on: req.db).unwrap(or: Abort(.notFound))
-        let tag = Tag.find(req.parameters.get("tag_id"), on: req.db).unwrap(or: Abort(.notFound))
+        let blog = Blog.find(req.parameters.get(FieldKey.blogID.description), on: req.db).unwrap(or: Abort(.notFound))
+        let tag = Tag.find(req.parameters.get(FieldKey.tagID.description), on: req.db).unwrap(or: Abort(.notFound))
         return blog
             .and(tag)
             .flatMap { (blog, tag) -> EventLoopFuture<HTTPResponseStatus> in

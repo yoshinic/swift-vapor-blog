@@ -8,25 +8,25 @@ final class Blog: Model, Content {
     @ID(key: .id)
     var id: UUID?
     
-    @Field(key: "picture_base64")
+    @Field(key: .pictureBase64)
     var pictureBase64: String?
     
-    @Field(key: "title")
+    @Field(key: .title)
     var title: String
     
-    @Field(key: "contents")
+    @Field(key: .contents)
     var contents: String?
     
-    @Parent(key: "user_id")
+    @Parent(key: .userID)
     var user: User
     
     @Siblings(through: BlogTagPivot.self, from: \.$blog, to: \.$tag)
     var tags: [Tag]
     
-    @Timestamp(key: "created_at", on: .create)
+    @Timestamp(key: .createdAt, on: .create)
     var createdAt: Date?
     
-    @Timestamp(key: "updated_at", on: .update)
+    @Timestamp(key: .updatedAt, on: .update)
     var updatedAt: Date?
     
     init() { }

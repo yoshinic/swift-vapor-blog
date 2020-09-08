@@ -7,25 +7,25 @@ final class User: Model, Content {
     @ID(key: .id)
     var id: UUID?
     
-    @Field(key: "name")
+    @Field(key: .name)
     var name: String
     
-    @Field(key: "username")
+    @Field(key: .username)
     var username: String
     
-    @Field(key: "password_hash")
+    @Field(key: .passwordHash)
     var passwordHash: String
     
     @Children(for: \.$user)
     var blogs: [Blog]
     
-    @Timestamp(key: "created_at", on: .create)
+    @Timestamp(key: .createdAt, on: .create)
     var createdAt: Date?
     
-    @Timestamp(key: "updated_at", on: .update)
+    @Timestamp(key: .updatedAt, on: .update)
     var updatedAt: Date?
     
-    @Timestamp(key: "deleted_at", on: .delete)
+    @Timestamp(key: .deletedAt, on: .delete)
     var deletedAt: Date?
     
     init() { }

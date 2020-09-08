@@ -7,10 +7,10 @@ final class UserToken: Model, Content {
     @ID(key: .id)
     var id: UUID?
     
-    @Field(key: "value")
+    @Field(key: .value)
     var value: String
     
-    @Parent(key: "user_id")
+    @Parent(key: .userID)
     var user: User
     
     init() { }

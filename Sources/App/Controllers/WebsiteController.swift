@@ -2,12 +2,15 @@ import Vapor
 import Fluent
 
 struct WebsiteController: RouteCollection {
+    
+    private let tokenIdentifier = "CSRF_TOKEN"
+    
     func boot(routes: RoutesBuilder) throws {
         let authSessionRoutes = routes.grouped(UserSessionAuthenticator())
         authSessionRoutes.get(use: indexHandler)
         authSessionRoutes.get("users", use: allUsersHandler)
-        authSessionRoutes.get("users", ":user_id", use: userHandler)
-        authSessionRoutes.get("blogs", ":blog_id", use: blogHandler)
+        authSessionRoutes.get("users", ":\(FieldKey.userID.description)", use: userHandler)
+        authSessionRoutes.get("blogs", ":\(FieldKey.blogID.description)", use: blogHandler)
         authSessionRoutes.get("register", use: registerHandler)
         authSessionRoutes.post("register", use: registerPostHandler)
         authSessionRoutes.post("logout", use: logoutHandler)
@@ -16,9 +19,9 @@ struct WebsiteController: RouteCollection {
         let protectedRoutes = authSessionRoutes.grouped(User.redirectMiddleware(path: "/login"))
         protectedRoutes.get("blogs", "create", use: createBlogHandler)
         protectedRoutes.post("blogs", "create", use: createBlogPostHandler)
-        protectedRoutes.get("blogs", ":blog_id", "edit", use: editBlogHandler)
-        protectedRoutes.post("blogs", ":blog_id", "edit", use: editBlogPostHandler)
-        protectedRoutes.post("blogs", ":blog_id", "delete", use: deleteBlogHandler)
+        protectedRoutes.get("blogs", ":\(FieldKey.blogID.description)", "edit", use: editBlogHandler)
+        protectedRoutes.post("blogs", ":\(FieldKey.blogID.description)", "edit", use: editBlogPostHandler)
+        protectedRoutes.post("blogs", ":\(FieldKey.blogID.description)", "delete", use: deleteBlogHandler)
         
         let passwordProtected = authSessionRoutes.grouped(UserCredentialsAuthenticator())
         passwordProtected.post("login", use: loginPostHandler)
@@ -51,7 +54,7 @@ struct WebsiteController: RouteCollection {
     
     func blogHandler(_ req: Request) throws -> EventLoopFuture<View> {
         Blog
-            .find(req.parameters.get("blog_id"), on: req.db)
+            .find(req.parameters.get(FieldKey.blogID.description), on: req.db)
             .unwrap(or: Abort(.notFound))
             .flatMap { blog in
                 blog
@@ -107,14 +110,14 @@ struct WebsiteController: RouteCollection {
     func createBlogHandler(_ req: Request) throws -> EventLoopFuture<View> {
         let token = [UInt8].random(count: 16).base64
         let context = CreateBlogContext(csrfToken: token)
-        req.session.data["CSRF_TOKEN"] = token
+        req.session.data[tokenIdentifier] = token
         return req.view.render("createBlog", context)
     }
     
     func createBlogPostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let data = try req.content.decode(CreateBlogData.self)
-        let expectedToken = req.session.data["CSRF_TOKEN"]
-        req.session.data["CSRF_TOKEN"] = nil
+        let expectedToken = req.session.data[tokenIdentifier]
+        req.session.data[tokenIdentifier] = nil
         guard let csrfToken = data.csrfToken, expectedToken == csrfToken else {
             throw Abort(.badRequest)
         }
@@ -143,7 +146,7 @@ struct WebsiteController: RouteCollection {
     
     func editBlogHandler(_ req: Request) throws -> EventLoopFuture<View> {
         return Blog
-            .find(req.parameters.get("blog_id"), on: req.db)
+            .find(req.parameters.get(FieldKey.blogID.description), on: req.db)
             .unwrap(or: Abort(.notFound))
             .and(value: req.auth.get(User.self))
             .flatMap { (blog: Blog, user: User?) in
@@ -156,7 +159,7 @@ struct WebsiteController: RouteCollection {
     
     func editBlogPostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         return Blog
-            .find(req.parameters.get("blog_id"), on: req.db)
+            .find(req.parameters.get(FieldKey.blogID.description), on: req.db)
             .unwrap(or: Abort(.notFound))
             .and(value: try req.content.decode(CreateBlogData.self))
             .and(value: try req.auth.require(User.self))
@@ -193,7 +196,7 @@ struct WebsiteController: RouteCollection {
     
     func deleteBlogHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         Blog
-            .find(req.parameters.get("blog_id"), on: req.db)
+            .find(req.parameters.get(FieldKey.blogID.description), on: req.db)
             .unwrap(or: Abort(.notFound))
             .flatMap { blog in
                 blog.$tags

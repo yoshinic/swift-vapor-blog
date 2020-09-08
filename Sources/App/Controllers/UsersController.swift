@@ -5,8 +5,8 @@ struct UsersController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let usersRoute = routes.grouped("api", "users")
         usersRoute.get(use: getAllHandler)
-        usersRoute.get(":user_id", use: getHandler)
-        usersRoute.get(":user_id", "blogs", use: getBlogsHandler)
+        usersRoute.get(":\(FieldKey.userID.description)", use: getHandler)
+        usersRoute.get(":\(FieldKey.userID.description)", "blogs", use: getBlogsHandler)
         
         let basicAuthGroup = usersRoute.grouped(
             User.authenticator(database: .psql),
@@ -20,10 +20,10 @@ struct UsersController: RouteCollection {
         )
         
         tokenAuthGroup.post(use: createHandler)
-        tokenAuthGroup.put(":user_id", use: updateHandler)
-        tokenAuthGroup.delete(":user_id", use: deleteHandler)
-        tokenAuthGroup.post(":user_id", "restore", use: restoreHandler)
-        tokenAuthGroup.delete(":user_id", "force", use: forceDeleteHandler)
+        tokenAuthGroup.put(":\(FieldKey.userID.description)", use: updateHandler)
+        tokenAuthGroup.delete(":\(FieldKey.userID.description)", use: deleteHandler)
+        tokenAuthGroup.post(":\(FieldKey.userID.description)", "restore", use: restoreHandler)
+        tokenAuthGroup.delete(":\(FieldKey.userID.description)", "force", use: forceDeleteHandler)
     }
     
     func getAllHandler(_ req: Request) throws -> EventLoopFuture<[User.Public]> {
@@ -31,7 +31,7 @@ struct UsersController: RouteCollection {
     }
     
     func getHandler(_ req: Request) throws -> EventLoopFuture<User.Public> {
-        let userID = req.parameters.get("user_id", as: User.IDValue.self)
+        let userID = req.parameters.get(FieldKey.userID.description, as: User.IDValue.self)
         return User
             .find(userID, on: req.db)
             .unwrap(or: Abort(.notFound))
@@ -39,7 +39,7 @@ struct UsersController: RouteCollection {
     }
     
     func getBlogsHandler(_ req: Request) throws -> EventLoopFuture<[Blog]> {
-        let userID = req.parameters.get("user_id", as: User.IDValue.self)
+        let userID = req.parameters.get(FieldKey.userID.description, as: User.IDValue.self)
         return User
             .find(userID, on: req.db)
             .unwrap(or: Abort(.notFound))
@@ -53,7 +53,7 @@ struct UsersController: RouteCollection {
     }
     
     func createHandler(_ req: Request) throws -> EventLoopFuture<User.Public> {
-        try User.Create.validate(req)
+        try User.Create.validate(content: req)
         let data = try req.content.decode(User.Create.self)
         return User
             .query(on: req.db)
@@ -66,7 +66,7 @@ struct UsersController: RouteCollection {
     }
     
     func updateHandler(_ req: Request) throws -> EventLoopFuture<User.Public> {
-        let userID = req.parameters.get("user_id", as: User.IDValue.self)
+        let userID = req.parameters.get(FieldKey.userID.description, as: User.IDValue.self)
         let updateUserData = try req.content.decode(User.Create.self)
         return User
             .query(on: req.db)
@@ -86,7 +86,7 @@ struct UsersController: RouteCollection {
     }
     
     func deleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-        let userID = req.parameters.get("user_id", as: User.IDValue.self)
+        let userID = req.parameters.get(FieldKey.userID.description, as: User.IDValue.self)
         return User
             .find(userID, on: req.db)
             .unwrap(or: Abort(.notFound))
@@ -96,7 +96,7 @@ struct UsersController: RouteCollection {
     }
     
     func restoreHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-        let userID = req.parameters.get("user_id", as: User.IDValue.self)
+        let userID = req.parameters.get(FieldKey.userID.description, as: User.IDValue.self)
         return User
             .query(on: req.db)
             .filter(\.$id == userID!)
@@ -110,7 +110,7 @@ struct UsersController: RouteCollection {
     
     func forceDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
         User
-            .find(req.parameters.get("user_id"), on: req.db)
+            .find(req.parameters.get(FieldKey.userID.description), on: req.db)
             .unwrap(or: Abort(.notFound))
             .flatMap { user -> EventLoopFuture<HTTPResponseStatus> in
                 return user.delete(force: true, on: req.db).transform(to: .ok)

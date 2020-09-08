@@ -4,6 +4,7 @@ import FluentPostgresDriver
 
 extension Blog {
     static func create(
+        pictureBase64: String? = nil,
         title: String = "デフォルトタイトル",
         contents: String? = nil,
         user: User? = nil,
@@ -14,6 +15,7 @@ extension Blog {
             blogsUser = try User.create(on: db)
         }
         let blog = Blog(
+            pictureBase64: pictureBase64,
             title: title,
             contents: contents,
             userID: blogsUser!.id!

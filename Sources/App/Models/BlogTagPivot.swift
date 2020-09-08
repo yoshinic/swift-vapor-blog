@@ -7,16 +7,16 @@ final class BlogTagPivot: Model {
     @ID(key: .id)
     var id: UUID?
     
-    @Parent(key: "blog_id")
+    @Parent(key: .blogID)
     var blog: Blog
     
-    @Parent(key: "tag_id")
+    @Parent(key: .tagID)
     var tag: Tag
     
-    @Timestamp(key: "created_at", on: .create)
+    @Timestamp(key: .createdAt, on: .create)
     var createdAt: Date?
 
-    @Timestamp(key: "updated_at", on: .update)
+    @Timestamp(key: .updatedAt, on: .update)
     var updatedAt: Date?
     
     init() { }

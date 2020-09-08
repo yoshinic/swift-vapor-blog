@@ -7,16 +7,16 @@ final class Tag: Model, Content {
     @ID(key: .id)
     var id: UUID?
     
-    @Field(key: "name")
+    @Field(key: .name)
     var name: String
     
     @Siblings(through: BlogTagPivot.self, from: \.$tag, to: \.$blog)
     var blogs: [Blog]
     
-    @Timestamp(key: "created_at", on: .create)
+    @Timestamp(key: .createdAt, on: .create)
     var createdAt: Date?
 
-    @Timestamp(key: "updated_at", on: .update)
+    @Timestamp(key: .updatedAt, on: .update)
     var updatedAt: Date?
     
     init() { }

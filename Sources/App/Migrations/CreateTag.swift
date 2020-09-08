@@ -4,9 +4,9 @@ struct CreateTag: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema(Tag.schema)
             .id()
-            .field("name", .string, .required, .sql(.unique))
-            .field("created_at", .datetime)
-            .field("updated_at", .datetime)
+            .field(.name, .string, .required, .sql(.unique))
+            .field(.createdAt, .datetime)
+            .field(.updatedAt, .datetime)
             .create()
     }
 

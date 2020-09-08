@@ -5,8 +5,8 @@ struct TagsController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let tagsRoute = routes.grouped("api", "tags")
         tagsRoute.get(use: getAllHandler)
-        tagsRoute.get(":tag_id", use: getHandler)
-        tagsRoute.get(":tag_id", "blogs", use: getBlogsHandler)
+        tagsRoute.get(":\(FieldKey.tagID.description)", use: getHandler)
+        tagsRoute.get(":\(FieldKey.tagID.description)", "blogs", use: getBlogsHandler)
         
         let tokenAuthGroup = tagsRoute.grouped(
             UserToken.authenticator(database: .psql),
@@ -21,13 +21,13 @@ struct TagsController: RouteCollection {
     
     func getHandler(_ req: Request) throws -> EventLoopFuture<Tag> {
         Tag
-            .find(req.parameters.get("tag_id"), on: req.db)
+            .find(req.parameters.get(FieldKey.tagID.description), on: req.db)
             .unwrap(or: Abort(.notFound))
     }
     
     func getBlogsHandler(_ req: Request) throws -> EventLoopFuture<[Blog]> {
         Tag
-            .find(req.parameters.get("tag_id"), on: req.db)
+            .find(req.parameters.get(FieldKey.tagID.description), on: req.db)
             .unwrap(or: Abort(.notFound))
             .flatMap { $0.$blogs.query(on: req.db).all() }
     }
