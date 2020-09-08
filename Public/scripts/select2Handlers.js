@@ -18,10 +18,10 @@ $.ajax(
     }
     $("#tags").select2(
       {
-        placeholder: "Select Tags for the Acronym",
+        placeholder: "タグを入力して下さい。",
         tags: true,
         tokenSeparators: [','],
-        data: dataToReturn
+        data: dataToReturn,
       }
     );
   }

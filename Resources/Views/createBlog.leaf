@@ -7,48 +7,61 @@
   #endexport
 
   #export("body"):
-    <h1>#(title)</h1>
+    <h1 class="title">#(title)</h1>
 
     <form method="post" onsubmit="setBlogData()">
       #if(csrfToken):
         <input type="hidden" id="csrfToken" name="csrfToken" value="#(csrfToken)">
       #endif
       
-      <div>
-        <label for="title">タイトル</label>
-        <input type="text" id="title" name="title" #if(editing):value="#(blog.title)"#endif/>
+      <div class="file">
+        <label class="file-label">
+          <input type="file" id="picture" name="picture" accept="image/*" class="file-input"/>
+          <span class="file-cta">
+            <span class="file-label">
+              画像を選択
+            </span>
+          </span>
+        </label>
+      </div>
+      <img id="preview" #if(editing && blog.pictureBase64):src="#(blog.pictureBase64)"#endif>
+      <input type="hidden" id="pictureBase64" name="pictureBase64" value=""/>
+      
+      <div class="field">
+        <div class="control">
+          <input type="text" placeholder="タイトルを入力して下さい。" name="title" class="input" #if(editing):value="#(blog.title)"#endif>
+        </div>
       </div>
       
-      <div>
-          <label>挿し絵</label>
-          <input type="file" id="picture" name="picture" accept="image/*"/>
-          <input type="hidden" id="pictureBase64" name="pictureBase64" value=""/>
-          <img id="preview" #if(editing && blog.pictureBase64):src="#(blog.pictureBase64)"#endif>
+      <div class="field">
+        <div class="control">
+          <select id="tags" name="tags" multiple="multiple" style="width: 100%;">
+            #if(editing):
+              #for(tag in tags):
+                <option value="#(tag.name)" selected="selected">#(tag.name)</option>
+              #endfor
+             #endif
+          </select>
+        </div>
       </div>
       
-      <div>
-        <label for="tags">タグ</label>
-        <select id="tags" name="tags" class="form-control" placeholder="タグを入力して下さい" multiple="multiple" style="width: 400px;">
-          #if(editing):
-            #for(tag in tags):
-              <option value="#(tag.name)" selected="selected">#(tag.name)</option>
-            #endfor
-           #endif
-        </select>
+      <div class="field">
+        <div class="control">
+          <div id="editor" name="editor"></div>
+          <!-- 送信用テキスト -->
+          <input type="hidden" id="contents" name="contents" value=""/>
+        </div>
       </div>
       
-      <label>本文</label>
-      <div id="editor" name="editor"></div>
-      <!-- 送信用テキスト -->
-      <input type="hidden" id="contents" name="contents" value=""/>
-      
-      <div>
-        <button type="submit">
-          #if(editing):更新
-          #else:送信
-          #endif
-        </button>
-        <button type="button" onclick="history.back()">戻る</button>
+      <div class="field">
+        <div class="control">
+          <button type="submit" class="button">
+            #if(editing):更新
+            #else:送信
+            #endif
+          </button>
+          <button type="button" class="button" onclick="history.back()">戻る</button>
+        </div>
       </div>
     </form>
   #endexport

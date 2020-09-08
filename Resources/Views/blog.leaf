@@ -7,30 +7,46 @@
   #endexport
 
   #export("body"):
-    <h1>#(blog.title)</h1>
-      #for(tag in tags):
-        <p>##(tag.name)<p>
-      #endfor
-    <p>作成者:<a href="/users/#(user.id)/">#(user.name)</a></p>
-    
-    #if(blog.pictureBase64 != "null"):
-      <div>
+  
+    #if(blog.pictureBase64):
+      <figure class="image">
         <img src="#(blog.pictureBase64)" alt="" style="height: 500px; width: 100%; object-fit: cover;">
-      </div>
+      </figure>
     #endif
     
-    <div>
+    <div class="field is-grouped is-grouped-multiline">
+      #for(tag in tags):
+        <div class="control">
+            <div class="tags has-addons">
+                <span class="tag is-dark">#</span>
+                    <span class="tag is-info">#(tag.name)</span>
+            </div>
+        </div>
+      #endfor
+    </div>
+      
+    <label class="label">作成者：<a href="/users/#(blog.user.id)/">#(user.name)</a></label>
+    <h1 class="title">#(blog.title)</h1>
+
+    <div class="content">
       <input type="hidden" id="editor" name="editor" value=""/>
       <div id="view"></div>
     </div>
-
+    
     #if(authenticatedUser.username == user.username):
       <form method="post" action="/blogs/#(blog.id)/delete">
-        <a href="/blogs/#(blog.id)/edit" role="button">編集</a>&nbsp;
-        <input type="submit" value="Delete" />
+        <div class="field is-grouped">
+          <p class="control">
+            <a href="/blogs/#(blog.id)/edit" role="button" class="button">編集</a>&nbsp;
+          </p>
+          <p class="control">
+            <input type="submit" value="削除" class="button" />
+          </p>
+        </div>
       </form>
     #endif
-    <button type="button" onclick="history.back()">戻る</button>
+    
+    <button type="button" class="button" onclick="history.back()">戻る</button>
   #endexport
 
   #export("scripts"):

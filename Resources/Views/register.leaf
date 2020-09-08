@@ -4,29 +4,45 @@
   #endexport
 
   #export("body"):
-    <form method="post">
-      <div>
-        <label for="name">名前</label>
-        <input type="text" name="name"/>
+    <h1 class="title">#(title)</h1>
+
+    <form action="/register" method="post">
+      <div class="field">
+        <label for="name" class="label">名前：</label>
+        <div class="control">
+          <input type="text" name="name" id="name" class="input">
+        </div>
       </div>
       
-      <div>
-        <label for="username">ユーザー名（一意）</label>
-        <input type="text" name="username"/>
+      <div class="field">
+        <label for="username" class="label">ユーザー名（一意）：</label>
+        <div class="control">
+          <input type="text" name="username" id="username" class="input">
+        </div>
       </div>
       
-      <div>
-        <label>パスワード</label>
-        <input type="password" name="password"/>
+      <div class="field">
+        <label for="password" class="label">パスワード：</label>
+        <div class="control">
+          <input type="password" name="password" id="password" class="input">
+        </div>
       </div>
       
-      <div>
-        <label>パスワードの確認</label>
-        <input type="password" name="confirmPassword"/>
+      <div class="field">
+        <label for="confirmPassword" class="label">パスワードの確認：</label>
+        <div class="control">
+          <input type="password" name="confirmPassword" id="confirmPassword" class="input">
+        </div>
       </div>
       
-      <button type="submit">登録</button>
-      <button type="button" onclick="history.back()">戻る</button>
+      <div class="field is-grouped">
+        <div class="control">
+          <button type="submit" class="button">登録</button>
+        </div>
+        <div class="control">
+          <button type="button" class="button" onclick="history.back()">戻る</button>
+        </div>
+      </div>
     </form>
   #endexport
 

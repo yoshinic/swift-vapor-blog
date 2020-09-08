@@ -5,7 +5,7 @@
   #endexport
 
   #export("body"):
-    <h1>#(title)</h1>
+    <h1 class="title">#(title)</h1>
 
     #if(loginError):
       <div role="alert">
@@ -14,18 +14,28 @@
     #endif
 
     <form action="/login" method="post">
-      <div>
-        <label>ユーザー名</label>
-        <input type="text" name="username"/>
+      <div class="field">
+        <label for="username" class="label">ユーザー名：</label>
+        <div class="control">
+          <input type="text" name="username" id="username" class="input">
+        </div>
       </div>
 
-      <div>
-        <label>パスワード</label>
-        <input type="password" name="password"/>
+      <div class="field">
+        <label for="password" class="label">パスワード：</label>
+        <div class="control">
+          <input type="password" name="password" id="password" class="input">
+        </div>
       </div>
 
-      <button type="submit">ログイン</button>
-      <button type="button" onclick="history.back()">戻る</button>
+      <div class="field is-grouped">
+        <div class="control">
+          <button type="submit" class="button">ログイン</button>
+        </div>
+        <div class="control">
+          <button type="button" class="button" onclick="history.back()">戻る</button>
+        </div>
+      </div>
     </form>
   #endexport
 

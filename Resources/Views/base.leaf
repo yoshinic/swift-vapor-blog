@@ -4,10 +4,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>#(title)</title>
+    <link rel="stylesheet" href="/lib/css/bulma-0.9.0.min.css">
     #import("css") 
   </head>
   <body>
-    #import("body")
+    <div class="columns is-centered">
+        <div class="column is-three-quarters">
+            #import("body")
+        </div>
+    </div>
     #import("scripts")
   </body>
 </html>

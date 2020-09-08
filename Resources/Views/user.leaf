@@ -1,14 +1,15 @@
 #extend("base"):
   
   #export("css"):
-
   #endexport
 
   #export("body"):
-    <p>名前：#(user.name)</p>
-    <p>ユーザー名：#(user.username)</p>
-    <p>ブログ一覧</p>
-    <table>
+    <h1 class="title">#(title)</h1>
+
+    <label class="label">名前：#(user.name)</label>
+    <label class="label">ユーザー名：#(user.username)</label>
+
+    <table class="table">
       <thead>
         <tr>
           <th>タイトル</th>
@@ -22,12 +23,11 @@
         #endfor
       </tbody>
     </table>
-    <button type="button" onclick="history.back()">戻る</button>
+
+    <button type="button" class="button" onclick="history.back()">戻る</button>
   #endexport
 
   #export("scripts"):
   #endexport
   
 #endextend
-
-
