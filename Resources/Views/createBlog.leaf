@@ -63,7 +63,7 @@
     <script src="/scripts/quillHandlers.js"></script>
     <script type="text/javascript">initQuill(false)</script>
     #if(editing):
-      <script type="text/javascript">readBlogData("#(blog.contents)")</script>
+      <script type="text/javascript">readBlogData('#(blog.contents)')</script>
     #endif
   #endexport
   
