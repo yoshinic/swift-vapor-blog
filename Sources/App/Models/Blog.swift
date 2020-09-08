@@ -8,13 +8,13 @@ final class Blog: Model, Content {
     @ID(key: .id)
     var id: UUID?
     
-    @Field(key: .pictureBase64)
+    @OptionalField(key: .pictureBase64)
     var pictureBase64: String?
     
     @Field(key: .title)
     var title: String
     
-    @Field(key: .contents)
+    @OptionalField(key: .contents)
     var contents: String?
     
     @Parent(key: .userID)

@@ -23,7 +23,7 @@
           <label>挿し絵</label>
           <input type="file" id="picture" name="picture" accept="image/*"/>
           <input type="hidden" id="pictureBase64" name="pictureBase64" value=""/>
-          <img id="preview">
+          <img id="preview" #if(editing && blog.pictureBase64):src="#(blog.pictureBase64)"#endif>
       </div>
       
       <div>

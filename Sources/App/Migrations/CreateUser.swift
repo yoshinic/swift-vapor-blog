@@ -5,9 +5,9 @@ struct CreateUser: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema(User.schema)
             .id()
-            .field(.name, .string)
+            .field(.name, .string, .required)
             .field(.username, .string, .required)
-            .field(.passwordHash, .string)
+            .field(.passwordHash, .string, .required)
             .field(.createdAt, .datetime)
             .field(.updatedAt, .datetime)
             .field(.deletedAt, .datetime)

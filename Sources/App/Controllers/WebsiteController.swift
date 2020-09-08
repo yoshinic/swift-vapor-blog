@@ -165,6 +165,7 @@ struct WebsiteController: RouteCollection {
             .and(value: try req.auth.require(User.self))
             .flatMap {
                 let ((blog, createBlogData), user) = $0
+                blog.pictureBase64 = createBlogData.pictureBase64
                 blog.title = createBlogData.title
                 blog.contents = createBlogData.contents
                 blog.$user.id = user.id!
