@@ -5,9 +5,13 @@ struct WebsiteController: RouteCollection {
     
     private let tokenIdentifier = "CSRF_TOKEN"
     
+    // short column の最大文字列数
+    private let shortMaxLength: Int = 100
+    
     func boot(routes: RoutesBuilder) throws {
         let authSessionRoutes = routes.grouped(UserSessionAuthenticator())
         authSessionRoutes.get(use: indexHandler)
+        authSessionRoutes.get(":page", ":per", use: indexPageHandler)
         authSessionRoutes.get("users", use: allUsersHandler)
         authSessionRoutes.get("users", ":\(FieldKey.userID.description)", use: userHandler)
         authSessionRoutes.get("blogs", ":\(FieldKey.blogID.description)", use: blogHandler)
@@ -27,9 +31,44 @@ struct WebsiteController: RouteCollection {
         passwordProtected.post("login", use: loginPostHandler)
     }
     
+    private func _indexHandler(page: Int, per: Int, on req: Request) -> EventLoopFuture<View> {
+        Blog
+            .query(on: req.db)
+            .field(\.$id)
+            .field(\.$pictureBase64)
+            .field(\.$title)
+            .field(\.$contents)
+            .with(\.$tags)
+            .sort(\.$updatedAt, .descending)
+            .paginate(.init(page: page, per: per))
+            .map { (pageBlogs: Page<Blog>) in
+                IndexContext(
+                    userLoggedIn: req.session.authenticated(User.self) != nil,
+                    blogs: pageBlogs.items.enumerated().map { (i: Int, blog: Blog) in
+                        .init(
+                            idx: i,
+                            id: blog.id!.uuidString,
+                            pictureBase64: blog.pictureBase64,
+                            title: blog.title,
+                            tags: blog.tags.map { $0.name }
+                        )
+                    },
+                    metadata: pageBlogs.metadata
+                )
+            }
+            .flatMap { req.view.render("index", $0) }
+    }
+    
     func indexHandler(req: Request) throws -> EventLoopFuture<View> {
-        let userLoggedIn = req.session.authenticated(User.self) != nil
-        return req.view.render("index", IndexContext(userLoggedIn: userLoggedIn))
+        _indexHandler(page: 1, per: Application.blogCountPerPage, on: req)
+    }
+    
+    func indexPageHandler(req: Request) throws -> EventLoopFuture<View> {
+        guard
+            let page = req.parameters.get("page", as: Int.self),
+            let per = req.parameters.get("per", as: Int.self)
+            else { throw Abort(.notFound) }
+        return _indexHandler(page: page, per: per, on: req)
     }
     
     func allUsersHandler(_ req: Request) throws -> EventLoopFuture<View> {
@@ -210,9 +249,19 @@ struct WebsiteController: RouteCollection {
     }
 }
 
+struct IndexPageBlogContext: Encodable {
+    let idx: Int
+    let id: String
+    let pictureBase64: String?
+    let title: String
+    let tags: [String]?
+}
+
 struct IndexContext: Encodable {
     let title: String = "ブログトップ"
     let userLoggedIn: Bool
+    let blogs: [IndexPageBlogContext]
+    let metadata: PageMetadata
 }
 
 struct AllUsersContext: Encodable {

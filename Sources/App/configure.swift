@@ -49,3 +49,7 @@ public func configure(_ app: Application) throws {
     // register routes
     try routes(app)
 }
+
+extension Application {
+    static let blogCountPerPage: Int = Int(Environment.get("BLOG_COUNT_PER_PAGE") ?? "9")!
+}

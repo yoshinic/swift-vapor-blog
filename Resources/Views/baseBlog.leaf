@@ -1,0 +1,54 @@
+#extend("base"):
+  
+  #export("css"):
+    <link rel="stylesheet" href="/css/my.css">
+    #import("baseBlogCSS")
+  #endexport
+
+  #export("body"):
+    <nav role="navigation" class="navbar mynavbar has-shadow" aria-label="main navigation">
+      <div class="navbar-brand">
+        <a href="" class="navbar-item">
+          <img src="" alt="">
+        </a>
+        <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="navMenu">
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+        </a>
+      </div>
+      <div id="navMenu" class="navbar-menu">
+        <div class="navbar-start">
+          <a href="/" class="navbar-item">トップ</a>
+          <a href="/users" class="navbar-item">ユーザー一覧</a>
+          
+          #if(userLoggedIn == true):
+            <a href="/blogs/create" class="navbar-item">ブログ作成</a>
+          #endif
+        </div>
+        <div class="navbar-end">
+          <a href="/register" class="navbar-item">新規登録</a>
+          #if(userLoggedIn == false):
+            <a href="/login" class="navbar-item">ログイン</a>
+          #elseif(userLoggedIn == true):
+            <form action="/logout" method="POST">
+              <div class="navbar-item">
+                <input type="submit" class="button" value="ログアウト">
+              </div>
+            </form>
+          #endif
+        </div>
+      </div>
+    </nav>
+    
+    <main>
+      #import("main")
+    </main>
+    #import("pagination")
+  #endexport
+
+  #export("scripts"):
+    <script src="/scripts/bulmaToggle.js"></script>
+    #import("baseBlogScripts")
+  #endexport
+#endextend

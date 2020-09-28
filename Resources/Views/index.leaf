@@ -1,55 +1,123 @@
-#extend("base"):
+#extend("baseBlog"):
   
-  #export("css"):
-    <link rel="stylesheet" href="/css/my.css">  
+  #export("baseBlogCSS"):
   #endexport
 
-  #export("body"):
-    <nav role="navigation" class="navbar mynavbar has-shadow" aria-label="main navigation">
-      <div class="navbar-brand">
-        <a href="" class="navbar-item">
-          <img src="" alt="">
-        </a>
-        <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="navMenu">
-          <span aria-hidden="true"></span>
-          <span aria-hidden="true"></span>
-          <span aria-hidden="true"></span>
-        </a>
-      </div>
-      <div id="navMenu" class="navbar-menu">
-        <div class="navbar-start">
-          <a href="/" class="navbar-item">トップ</a>
-          <a href="/users" class="navbar-item">ユーザー一覧</a>
-          
-          #if(userLoggedIn == true):
-            <a href="/blogs/create" class="navbar-item">ブログ作成</a>
-          #endif
+  #export("main"):
+    <div class="tile is-ancestor">
+        <div class="tile is-vertical">
+            #for(blog in blogs):
+                #if(blog.idx == 0 || blog.idx == 3 || blog.idx == 6):
+                    <div class="tile">
+                #endif
+                    <div class="tile is-parent is-4">
+                        <article class="tile is-child box">
+                            <a href="/blogs/#(blog.id)">
+                                <figure class="image is-4by3">
+                                    <img
+                                        #if(blog.pictureBase64 != "null"):src="#(blog.pictureBase64)"#endif
+                                        style="object-fit: contain;"
+                                        alt="画像"
+                                        >
+                                </figure>
+                            </a>
+                            
+                            <div class="field is-grouped is-grouped-multiline">
+                                #for(tag in blog.tags):
+                                    <div class="control">
+                                        <div class="tags has-addons">
+                                            <span class="tag is-dark">#</span>
+                                            <span class="tag is-info">#(tag)</span>
+                                        </div>
+                                    </div>
+                                #endfor
+                            </div>
+                            <a href="/blogs/#(blog.id)">
+                                <p class="title">#(blog.title)</p>
+                            </a>
+                        </article>
+                    </div>
+                #if(blog.idx == 2 || blog.idx == 5 || blog.idx == 8):
+                    </div>
+                #endif
+            #endfor
         </div>
-        <div class="navbar-end">
-          <a href="/register" class="navbar-item">新規登録</a>
-          #if(userLoggedIn == false):
-            <a href="/login" class="navbar-item">ログイン</a>
-          #elseif(userLoggedIn == true):
-            <form action="/logout" method="POST">
-              <div class="navbar-item">
-                <input type="submit" class="button" value="ログアウト">
-              </div>
-            </form>
-          #endif
-        </div>
-      </div>
-    </nav>
-    
-    <main>
-
-    </main>
-    
-    <footer>
-    
-    </footer>
+    </div>
   #endexport
 
-  #export("scripts"):
-    <script src="/scripts/bulmaToggle.js"></script>
+  #export("pagination"):
+    <div class="columns is-centered">
+        <div class="column is-three-quarters">
+            <nav class="pagination is-centered" role="navigation" aria-label="pagination">
+                <a class="pagination-previous"
+                    href="/#(metadata.page - 1)/#(metadata.per)"
+                    #if(metadata.page == 1):disabled#endif>&lt;
+                </a>
+                <a class="pagination-next"
+                    href="/#(metadata.page + 1)/#(metadata.per)"
+                    #if(metadata.page * metadata.per >= metadata.total):disabled#endif>&gt;
+                </a>
+                <ul class="pagination-list">
+                    #if(metadata.page >= 3):
+                        <li>
+                            <a class="pagination-link" aria-label="1" href="/1/#(metadata.per)">
+                                1
+                            </a>
+                        </li>
+                    #endif
+                    
+                    #if(metadata.page >= 4):
+                        <li><span class="pagination-ellipsis">&hellip;</span></li>
+                    #endif
+                    
+                    #if(metadata.page >= 2):
+                        <li>
+                            <a class="pagination-link" aria-label="#(metadata.page - 1)" href="/#(metadata.page - 1)/#(metadata.per)">
+                                #(metadata.page - 1)
+                            </a>
+                        </li>
+                    #endif
+                    
+                    #if(metadata.total >= 1):
+                        <li>
+                            <a class="pagination-link is-current" aria-label="#(metadata.page)" aria-current="page" href="/#(metadata.page)/#(metadata.per)">
+                                #(metadata.page)
+                            </a>
+                        </li>
+                    #endif
+                    
+                    #if(metadata.total - metadata.page * metadata.per >= 1):
+                        <li>
+                            <a class="pagination-link" aria-label="#(metadata.page + 1)" href="/#(metadata.page + 1)/#(metadata.per)">
+                                #(metadata.page + 1)
+                            </a>
+                        </li>
+                    #endif
+                    
+                    #if(metadata.total - metadata.page * metadata.per >= metadata.per * 2 + 1):
+                        <li><span class="pagination-ellipsis">&hellip;</span></li>
+                    #endif
+                    
+                    #if(metadata.total - metadata.page * metadata.per >= metadata.per + 1):
+                        <li>
+                            <a class="pagination-link" aria-label=""
+                                href=
+                                "/#if(modulo(metadata.total, metadata.per) == 0):#(metadata.total / metadata.per)#else:#(metadata.total / metadata.per + 1)#endif/#(metadata.per)"
+                            >
+                                #if(modulo(metadata.total, metadata.per) == 0):
+                                    #(metadata.total / metadata.per)
+                                #else:
+                                    #(metadata.total / metadata.per + 1)
+                                #endif
+                            </a>
+                        </li>
+                    #endif
+                </ul>
+            </nav>
+        </div>
+    </div>
+  #endexport
+  
+  #export("baseBlogScripts"):
   #endexport
 #endextend
