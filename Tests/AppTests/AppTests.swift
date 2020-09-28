@@ -45,11 +45,11 @@ extension XCTestCase {
                 var tokenHeaders = HTTPHeaders()
                 tokenHeaders.basicAuthorization = credentials
                 
-                try app.test(.POST, "/api/users/login", headers: tokenHeaders) { tokenResponse in
+                try app.test(.POST, "/api/users/login", headers: tokenHeaders, afterResponse:  { tokenResponse in
                     let token = try tokenResponse.content.decode(UserToken.self)
                     headers.add(name: .authorization, value: "Bearer \(token.value)")
                     try test(app, headers)
-                }
+                })
             }
         }
     }

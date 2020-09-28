@@ -15,13 +15,13 @@ final class UserTests: XCTestCase {
         try _test { app in
             let user = try User.create(name: usersName, username: usersUsername, on: app.db)
             _ = try User.create(on: app.db)
-            try app.test(.GET, usersURI) { response in
+            try app.test(.GET, usersURI, afterResponse:  { response in
                 let users = try response.content.decode([User.Public].self)
                 XCTAssertEqual(users.count, 3)
                 XCTAssertEqual(users[1].name, usersName)
                 XCTAssertEqual(users[1].username, usersUsername)
                 XCTAssertEqual(users[1].id, user.id)
-            }
+            })
         }
     }
     
@@ -50,13 +50,13 @@ final class UserTests: XCTestCase {
                         XCTAssertEqual(receivedUser.username, usersUsername)
                         XCTAssertNotNil(receivedUser.id)
                         
-                        try app.test(.GET, usersURI) { response in
+                        try app.test(.GET, usersURI, afterResponse:  { response in
                             let users = try response.content.decode([User.Public].self)
                             XCTAssertEqual(users.count, 2)
                             XCTAssertEqual(users[1].name, usersName)
                             XCTAssertEqual(users[1].username, usersUsername)
                             XCTAssertEqual(users[1].id, receivedUser.id)
-                        }
+                        })
                 }
             )
                 .test(
@@ -81,12 +81,12 @@ final class UserTests: XCTestCase {
     func testGettingASingleUserFromTheAPI() throws {
         try _test { app in
             let user = try User.create(name: usersName, username: usersUsername, on: app.db)
-            try app.test(.GET, "\(usersURI)\(user.id!)") { response in
+            try app.test(.GET, "\(usersURI)\(user.id!)", afterResponse:  { response in
                 let receivedUser = try response.content.decode(User.Public.self)
                 XCTAssertEqual(receivedUser.name, usersName)
                 XCTAssertEqual(receivedUser.username, usersUsername)
                 XCTAssertEqual(receivedUser.id, user.id)
-            }
+            })
         }
     }
     
@@ -98,13 +98,13 @@ final class UserTests: XCTestCase {
             let blog1 = try Blog.create(title: blogTitle, contents: blogContents, user: user, on: app.db)
             _ = try Blog.create(title: "テストタイトル２", contents: "テスト内容２", user: user, on: app.db)
             
-            try app.test(.GET, "\(usersURI)\(user.id!)/blogs") { response in
+            try app.test(.GET, "\(usersURI)\(user.id!)/blogs", afterResponse:  { response in
                 let blogs = try response.content.decode([Blog].self)
                 XCTAssertEqual(blogs.count, 2)
                 XCTAssertEqual(blogs[0].id, blog1.id)
                 XCTAssertEqual(blogs[0].title, blogTitle)
                 XCTAssertEqual(blogs[0].contents, blogContents)
-            }
+            })
         }
     }
     
@@ -126,11 +126,11 @@ final class UserTests: XCTestCase {
                         try request.content.encode(updatedUser)
                 },
                     afterResponse: { response in
-                        try app.test(.GET, "\(usersURI)\(user.id!)") { response in
+                        try app.test(.GET, "\(usersURI)\(user.id!)", afterResponse:  { response in
                             let returnedUser = try response.content.decode(User.Public.self)
                             XCTAssertEqual(returnedUser.name, usersName)
                             XCTAssertEqual(returnedUser.username, usersUsername)
-                        }
+                        })
                 })
                 .test(
                     .PUT,
@@ -140,11 +140,11 @@ final class UserTests: XCTestCase {
                         try request.content.encode(updatedUser)
                 },
                     afterResponse: { response in
-                        try app.test(.GET, "\(usersURI)\(user.id!)") { response in
+                        try app.test(.GET, "\(usersURI)\(user.id!)", afterResponse:  { response in
                             let returnedUser = try response.content.decode(User.Public.self)
                             XCTAssertEqual(returnedUser.name, usersName)
                             XCTAssertEqual(returnedUser.username, newUsername)
-                        }
+                        })
                 })
         }
     }
@@ -175,14 +175,14 @@ final class UserTests: XCTestCase {
                     afterResponse: { response in
                         XCTAssertEqual(response.status, .badRequest)
                         
-                        try app.test(.GET, usersURI) { response in
+                        try app.test(.GET, usersURI, afterResponse:  { response in
                             let users = try response.content.decode([User.Public].self)
                             XCTAssertEqual(users.count, 3)
                             XCTAssertEqual(users[1].name, usersName)
                             XCTAssertEqual(users[1].username, usersUsername)
                             XCTAssertEqual(users[2].name, oldName)
                             XCTAssertEqual(users[2].username, oldUsername)
-                        }
+                        })
                 })
         }
     }
@@ -191,59 +191,59 @@ final class UserTests: XCTestCase {
     func testSoftDeletingAndRestoringAnUser() throws {
         try _testAfterLoggedIn(loggedInRequest: true) { app, headers in
             let user = try User.create(on: app.db)
-            try app.test(.GET, usersURI, headers: headers) { response in
+            try app.test(.GET, usersURI, headers: headers, afterResponse:  { response in
                 var users = try response.content.decode([User.Public].self)
                 XCTAssertEqual(users.count, 2)
                 
                 try app
                     .test(.DELETE, "\(usersURI)\(user.id!)")
-                    .test(.GET, usersURI) { response in
+                    .test(.GET, usersURI, afterResponse:  { response in
                         users = try response.content.decode([User.Public].self)
                         XCTAssertEqual(users.count, 2)
-                }
-                .test(.DELETE, "\(usersURI)\(user.id!)", headers: headers)
-                .test(.GET, usersURI) { response in
-                    users = try response.content.decode([User.Public].self)
-                    XCTAssertEqual(users.count, 1)
-                    
-                    let count = try app.db.query(User.self).withDeleted().count().wait()
-                    XCTAssertEqual(count, 2)
-                }
-                .test(.POST, "\(usersURI)\(user.id!)/restore", headers: headers)
-                .test(.GET, usersURI) { response in
-                    users = try response.content.decode([User.Public].self)
-                    XCTAssertEqual(users.count, 2)
-                    
-                    let count = try app.db.query(User.self).withDeleted().count().wait()
-                    XCTAssertEqual(count, 2)
-                }
+                    })
+                    .test(.DELETE, "\(usersURI)\(user.id!)", headers: headers)
+                    .test(.GET, usersURI, afterResponse:  { response in
+                        users = try response.content.decode([User.Public].self)
+                        XCTAssertEqual(users.count, 1)
+                        
+                        let count = try app.db.query(User.self).withDeleted().count().wait()
+                        XCTAssertEqual(count, 2)
+                    })
+                    .test(.POST, "\(usersURI)\(user.id!)/restore", headers: headers)
+                    .test(.GET, usersURI, afterResponse:  { response in
+                        users = try response.content.decode([User.Public].self)
+                        XCTAssertEqual(users.count, 2)
+                        
+                        let count = try app.db.query(User.self).withDeleted().count().wait()
+                        XCTAssertEqual(count, 2)
+                    })
                 
-            }
+            })
         }
     }
     
     func testForceDeletingAnUser() throws {
         try _testAfterLoggedIn(loggedInRequest: true) { app, headers in
             let user = try User.create(on: app.db)
-            try app.test(.GET, usersURI, headers: headers) { response in
+            try app.test(.GET, usersURI, headers: headers, afterResponse:  { response in
                 var users = try response.content.decode([User.Public].self)
                 XCTAssertEqual(users.count, 2)
                 
                 try app
                     .test(.DELETE, "\(usersURI)\(user.id!)/force")
-                    .test(.GET, usersURI) { response in
+                    .test(.GET, usersURI, afterResponse:  { response in
                         users = try response.content.decode([User.Public].self)
                         XCTAssertEqual(users.count, 2)
-                }
-                .test(.DELETE, "\(usersURI)\(user.id!)/force", headers: headers)
-                .test(.GET, usersURI) { response in
-                    users = try response.content.decode([User.Public].self)
-                    XCTAssertEqual(users.count, 1)
-                    
-                    let count = try app.db.query(User.self).withDeleted().count().wait()
-                    XCTAssertEqual(count, 1)
-                }
-            }
+                    })
+                    .test(.DELETE, "\(usersURI)\(user.id!)/force", headers: headers)
+                    .test(.GET, usersURI, afterResponse:  { response in
+                        users = try response.content.decode([User.Public].self)
+                        XCTAssertEqual(users.count, 1)
+                        
+                        let count = try app.db.query(User.self).withDeleted().count().wait()
+                        XCTAssertEqual(count, 1)
+                    })
+            })
         }
     }
     
