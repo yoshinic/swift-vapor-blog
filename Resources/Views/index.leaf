@@ -50,5 +50,6 @@
   #endexport
 
   #export("scripts"):
+    <script src="/scripts/bulmaToggle.js"></script>
   #endexport
 #endextend
