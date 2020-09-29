@@ -3,7 +3,6 @@
 Swift Web Framework の [Vapor](https://docs.vapor.codes/4.0/) を使用した自作のブログアプリです。
 
 <br>
-<br>
 
 # 確認している環境
  
@@ -13,7 +12,6 @@ Swift Web Framework の [Vapor](https://docs.vapor.codes/4.0/) を使用した�
 * PostgreSQL 12.3 ~
 
 <br>
-<br>
 
 # 使用方法
 
@@ -21,8 +19,8 @@ Swift Web Framework の [Vapor](https://docs.vapor.codes/4.0/) を使用した�
 
 <br>
 
-0. [Homebrew](https://brew.sh/index_ja) のインストール
-1. [Docker](https://circleci.com/docker/index.html) のインストール
+0. Homebrew のインストール
+1. Docker のインストール
 2. Swift が実行できる環境をつくる
 3. Vapor をインストールする
 4. PostgreSQL をインストールする
@@ -36,7 +34,7 @@ Swift Web Framework の [Vapor](https://docs.vapor.codes/4.0/) を使用した�
 
 <br>
 
-[Homebrew](https://brew.sh/index_ja) というのは Mac のパッケージ管理アプリです。
+[Homebrew](https://brew.sh/index_ja) というのは Mac のパッケージ管理アプリです。<br>
 これを使ってアプリやライブラリをインストールすれば、そのバージョン管理などが簡単になります。<br>
 まずはこれをインストールします。ターミナルを開いて下記を実行して下さい。
 
@@ -54,8 +52,8 @@ Swift Web Framework の [Vapor](https://docs.vapor.codes/4.0/) を使用した�
 次に [Docker](https://circleci.com/docker/index.html) をインストールします。仮想環境を整えてくれます。
 
 ```
-~$ brew update
-~$ brew cask install docker
+~ $ brew update
+~ $ brew cask install docker
 ```
 
 この後、Docker アプリを起動します。<br>
@@ -68,23 +66,8 @@ Swift Web Framework の [Vapor](https://docs.vapor.codes/4.0/) を使用した�
 
 <br>
 
-[Swift の公式サイト](https://swift.org/download/#docker)に Docker を使用した Swift 環境の整え方が掲載されています。
-
-
-```
-~$ docker pull swift
-~$ docker run --privileged --interactive --tty \
---name swift-latest swift:latest /bin/bash
-```
-
-そのまま Docker コンテナに入りますので、Swift のバージョンを確認します。<br>
-「57e066e55e27」という数字の箇所は、私と同じになるとは限りません。
-
-```
-root@57e066e55e27:/# swift --version
-Swift version 5.3 (swift-5.3-RELEASE)
-Target: x86_64-unknown-linux-gnu
-```
+App Store から Xcode の最新版をインストールします。<br>
+すると Swift の最新版もインストールされます。
 
 <br>
 
@@ -93,40 +76,10 @@ Target: x86_64-unknown-linux-gnu
 <br>
 
 Vapor を利用するための Vapor Toolbox というものをインストールします。これにより vapor コマンドが使えるようになり、build や run などが簡単に行えるようになります。<br>
-これも[公式サイト](https://docs.vapor.codes/4.0/install/linux/#install-toolbox)にインストール方法があり、[こちら](https://github.com/vapor/toolbox/releases)から toolbox の最新バージョンを確認してインストールします。執筆時点では「18.2.2」です。
+これも[公式サイト](https://docs.vapor.codes/4.0/install/macos/#install-toolbox)にインストール方法があります。
 
 ```
-root@57e066e55e27:/# git clone https://github.com/vapor/toolbox.git
-root@57e066e55e27:/# cd toolbox
-root@57e066e55e27:/toolbox# git checkout 18.2.2
-root@57e066e55e27:/toolbox# make install
-```
-
-少し警告が出ますが大丈夫です。インストールできたか確認します。
-
-```
-root@57e066e55e27:/toolbox# vapor --help
-Usage: vapor <command>
-
-Vapor Toolbox (Server-side Swift web framework)
-
-Commands:
-       build Builds an app in the console.
-       clean Cleans temporary files.
-      heroku Commands for working with Heroku
-         new Generates a new app.
-         run Runs an app from the console.
-  supervisor Commands for working with Supervisord
-       xcode Opens an app in Xcode.
-
-Use `vapor <command> [--help,-h]` for more information on a command.
-```
-
-このような Help の説明が出れば OK です。
-一応カレントディレクトリを戻します。
-
-```
-root@57e066e55e27:/toolbox# cd ..
+~ $ brew install vapor
 ```
 
 <br>
@@ -135,32 +88,11 @@ root@57e066e55e27:/toolbox# cd ..
 
 <br>
 
-```
-root@57e066e55e27:/# apt-get update
-root@57e066e55e27:/# apt-get install wget -y
-root@57e066e55e27:/# sh -c "echo 'deb http://apt.postgresql.org/pub/repos/apt/ bionic-pgdg main' > /etc/apt/sources.list.d/pgdg.list"
-root@57e066e55e27:/# wget --quiet -O - http://apt.postgresql.org/pub/repos/apt/ACCC4CF8.asc | apt-key add -
-
-root@57e066e55e27:/# apt-get update
-root@57e066e55e27:/# apt-get install postgresql -y
-
-root@57e066e55e27:/# su postgres
-postgres@57e066e55e27:/# createuser --createdb --username=postgres --pwprompt postgres_vapor
-
-// パスワード入力（何でも良いです）
-Enter password for new role: （例：password）
-Enter it again:　（上と同じ文字列）
-
-// バージョンを確認します。
-postgres@57e066e55e27:/# psql --version
-psql (PostgreSQL) 12.4 (Ubuntu 12.4-1.pgdg18.04+1)
-```
-
-postgres ユーザーからログアウトします。
+このアプリで使用する DB の PostgreSQL をインストールします。<br>
+ここでは、現在の最新版の 12.4 をインストールしています。
 
 ```
-postgres@57e066e55e27:/#　exit
-root@57e066e55e27:/toolbox# cd ..
+~ $ docker run --name myblog -e POSTGRES_ROOT_PASSWORD=9999 -e POSTGRES_USER=postgres_vapor -e POSTGRES_PASSWORD=password -e POSTGRES_DB=blogdb -p 5432:5432 -d postgres:12.4
 ```
 
 <br>
@@ -170,10 +102,15 @@ root@57e066e55e27:/toolbox# cd ..
 <br>
 
 ```
-root@57e066e55e27:/# git clone https://github.com/yoshiswift/swift-vapor-blog.git
-root@57e066e55e27:/# cd swift-vapor-blog
-root@57e066e55e27:/swift-vapor-blog# swift build
+~ $ cd ~/Desktop
+Desktop $ git clone https://github.com/yoshiswift/swift-vapor-blog.git
+Desktop $ cd swift-vapor-blog
+swift-vapor-blog $ swift build
+・・・
+Linking Run
 ```
+
+最後の行に「Linking Run」と出たら OK です。
 
 <br>
 
@@ -186,9 +123,9 @@ Vapor では、 Vapor 用の環境変数を設定出来ます。<br>
 [Vapor's Environment API](https://docs.vapor.codes/4.0/environment/)
 
 これはプログラムの外側から設定できるので、作成した Web アプリの構成を動的に変える事が出来ます。<br>
+Vapor で設定できる範囲なら、設定項目は自分で自由に決められます。<br>
 
 私のアプリで設定できる項目は下記の通りです。<br><br>
-
 
 - SERVER_PORT　・・・　Vapor サーバーのポート番号
 - DEFAULT_MAX_BODY_SIZE　・・・　クライアントからサーバーへ送信するブログデータサイズの最大値
@@ -210,35 +147,50 @@ Vapor では、 Vapor 用の環境変数を設定出来ます。<br>
 
 では実際に作成してみます。<br>
 ターミナルを開いて下記を入力してください。<br>
-ここでは、nano というコマンドライン上のテキストエディタを使用して、「.env.development」という（少し変な）名前のファイルを新規作成しています。
+ここでは、nano というコマンドライン上のテキストエディタを使用して、「.env.development」という名前のファイルを新規作成しています。<br>
 
-```bash
-~/Desktop/swift-vapor-blog$ nano .env.development
+> nano の簡単な入力方法<br>
+> - 保存：「control」+「o」 -> 「エンターキー」
+> - キャンセル：「control」+「o」 -> 「control」+「c」
+> - 終了：「control」+「x」 
+<br><br>
+> 間違えた時は、一旦キャンセルで抜けましょう
+
+```
+swift-vapor-blog $ nano .env.development
 ```
 
 ターミナル上でテキストエディタが開いたと思いますので上記の項目を入力します。<br>
-下記はその一例です。
+下記はその一例です。コピペでもOKです。
 
-例
+例：
 ```
-SERVER_PORT=8081
+SERVER_PORT=8080
 DEFAULT_MAX_BODY_SIZE=10mb
 
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
-DATABASE_USERNAME=vapor
+DATABASE_USERNAME=postgres_vapor
 DATABASE_PASSWORD=password
-DATABASE_NAME=mydb
+DATABASE_NAME=blogdb
 
 USER_NAME=VAPOR
 USER_USERNAME=vapor
 USER_PASSWORD=9999
 ```
 
+<br>
 
+### 7. アプリ実行
 
-実行
+<br>
 
-```bash
-./.build/debug/Run
 ```
+swift-vapor-blog $ ./.build/debug/Run
+```
+
+<br>
+
+### 8. ブラウザを開く
+
+http://localhost:8080
