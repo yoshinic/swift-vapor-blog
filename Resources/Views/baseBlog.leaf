@@ -49,6 +49,7 @@
 
   #export("scripts"):
     <script src="/scripts/bulmaToggle.js"></script>
+    <script src="/scripts/bulmaModal.js"></script>
     #import("baseBlogScripts")
   #endexport
 #endextend

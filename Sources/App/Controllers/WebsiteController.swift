@@ -1,5 +1,6 @@
 import Vapor
 import Fluent
+import SwiftGD
 
 struct WebsiteController: RouteCollection {
     
@@ -12,20 +13,67 @@ struct WebsiteController: RouteCollection {
         let authSessionRoutes = routes.grouped(UserSessionAuthenticator())
         authSessionRoutes.get(use: indexHandler)
         authSessionRoutes.get(":page", ":per", use: indexPageHandler)
-        authSessionRoutes.get("users", use: allUsersHandler)
-        authSessionRoutes.get("users", ":\(FieldKey.userID.description)", use: userHandler)
-        authSessionRoutes.get("blogs", ":\(FieldKey.blogID.description)", use: blogHandler)
-        authSessionRoutes.get("register", use: registerHandler)
-        authSessionRoutes.post("register", use: registerPostHandler)
+        authSessionRoutes.get(
+            "blogs",
+            ":\(FieldKey.groupID.description)",
+            ":\(FieldKey.blogID.description)",
+            use: blogHandler
+        )
         authSessionRoutes.post("logout", use: logoutHandler)
         authSessionRoutes.get("login", use: loginHandler)
+        authSessionRoutes.on(
+            .GET,
+            "blogs",
+            ":\(FieldKey.groupID.description)",
+            ":\(FieldKey.blogID.description)",
+            "picture",
+            body: .stream,
+            use: getPictureHandler
+        )
+        authSessionRoutes.on(
+            .GET,
+            "blogs",
+            ":\(FieldKey.groupID.description)",
+            ":\(FieldKey.blogID.description)",
+            "contents",
+            body: .stream,
+            use: getContentsHandler
+        )
+        authSessionRoutes.on(
+            .GET,
+            "blogs",
+            ":\(FieldKey.groupID.description)",
+            ":\(FieldKey.blogID.description)",
+            "image",
+            ":idx",
+            body: .stream,
+            use: getContentsPictureHandler
+        )
         
         let protectedRoutes = authSessionRoutes.grouped(User.redirectMiddleware(path: "/login"))
         protectedRoutes.get("blogs", "create", use: createBlogHandler)
         protectedRoutes.post("blogs", "create", use: createBlogPostHandler)
-        protectedRoutes.get("blogs", ":\(FieldKey.blogID.description)", "edit", use: editBlogHandler)
-        protectedRoutes.post("blogs", ":\(FieldKey.blogID.description)", "edit", use: editBlogPostHandler)
-        protectedRoutes.post("blogs", ":\(FieldKey.blogID.description)", "delete", use: deleteBlogHandler)
+        protectedRoutes.get(
+            "blogs",
+            ":\(FieldKey.groupID.description)",
+            ":\(FieldKey.blogID.description)",
+            "edit",
+            use: editBlogHandler
+        )
+        protectedRoutes.post(
+            "blogs",
+            ":\(FieldKey.groupID.description)",
+            ":\(FieldKey.blogID.description)",
+            "edit",
+            use: editBlogPostHandler
+        )
+        protectedRoutes.post(
+            "blogs",
+            ":\(FieldKey.groupID.description)",
+            ":\(FieldKey.blogID.description)",
+            "delete",
+            use: deleteBlogHandler
+        )
         
         let passwordProtected = authSessionRoutes.grouped(UserCredentialsAuthenticator())
         passwordProtected.post("login", use: loginPostHandler)
@@ -34,11 +82,14 @@ struct WebsiteController: RouteCollection {
     private func _indexHandler(page: Int, per: Int, on req: Request) -> EventLoopFuture<View> {
         Blog
             .query(on: req.db)
+            .filter(\.$latest == true)
             .field(\.$id)
-            .field(\.$pictureBase64)
+            .field(\.$groupID)
+            .field(\.$comment)
+            .field(\.$picture)
             .field(\.$title)
-            .field(\.$contents)
             .with(\.$tags)
+            .with(\.$contents)
             .sort(\.$updatedAt, .descending)
             .paginate(.init(page: page, per: per))
             .map { (pageBlogs: Page<Blog>) in
@@ -48,9 +99,11 @@ struct WebsiteController: RouteCollection {
                         .init(
                             idx: i,
                             id: blog.id!.uuidString,
-                            pictureBase64: blog.pictureBase64,
+                            groupID: blog.groupID.uuidString,
+                            picturePath: "",
                             title: blog.title,
-                            tags: blog.tags.map { $0.name }
+                            tags: blog.tags.map { $0.name },
+                            short: blog.contents.short(self.shortMaxLength)
                         )
                     },
                     metadata: pageBlogs.metadata
@@ -92,24 +145,31 @@ struct WebsiteController: RouteCollection {
     }
     
     func blogHandler(_ req: Request) throws -> EventLoopFuture<View> {
-        Blog
-            .find(req.parameters.get(FieldKey.blogID.description), on: req.db)
+        guard
+            let blogID = req.parameters.get(FieldKey.blogID.description, as: Blog.IDValue.self)
+        else {
+            throw Abort(.notFound)
+        }
+        return Blog
+            .query(on: req.db)
+            .filter(\.$id == blogID)
+            .with(\.$user)
+            .with(\.$tags)
+            .first()
             .unwrap(or: Abort(.notFound))
-            .flatMap { blog in
-                blog
-                    .$user
-                    .get(on: req.db)
-                    .and(blog.$tags.query(on: req.db).all())
-                    .and(value: req.auth.get(User.self))
-                    .flatMap {
-                        let ((user, tags), authenticatedUser) = $0
-                        let context: BlogContext = .init(title: blog.title,
-                                                         blog: blog,
-                                                         user: user,
-                                                         tags: tags,
-                                                         authenticatedUser: authenticatedUser)
-                        return req.view.render("blog", context)
+            .and(value: req.auth.get(User.self))
+            .flatMapThrowing {
+                let (blog, authenticatedUser) = $0
+                if let d = blog.picture, d.count >= 1_000_000 {
+                    blog.picture = try Image(data: d, as: .png).resizedTo(height: 100, applySmoothing: true)?.export()
                 }
+                return (blog, authenticatedUser)
+        }
+        .flatMap { (blog: Blog, authenticatedUser: User?) in
+            let context: BlogContext = .init(title: blog.title,
+                                             blog: blog,
+                                             authenticatedUser: authenticatedUser)
+            return req.view.render("blog", context)
         }
     }
     
@@ -157,104 +217,156 @@ struct WebsiteController: RouteCollection {
         let data = try req.content.decode(CreateBlogData.self)
         let expectedToken = req.session.data[tokenIdentifier]
         req.session.data[tokenIdentifier] = nil
-        guard let csrfToken = data.csrfToken, expectedToken == csrfToken else {
-            throw Abort(.badRequest)
+        guard let csrfToken = data.csrfToken, expectedToken == csrfToken
+        else { throw Abort(.badRequest) }
+        
+        return Blog
+            .add(
+                try convertPictureData(data.picture),
+                data.title,
+                try req.auth.require(User.self).requireID(),
+                data.contents,
+                data.tags,
+                on: req.db(.psql)
+            )
+            .map { req.redirect(to: "/blogs/\($0.groupID)/\($0.id!)") }
+    }
+    
+    func getPictureHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+        guard let blogID = req.parameters.get(FieldKey.blogID.description, as: Blog.IDValue.self) else {
+            return req.eventLoop.future(.init(status: .notFound))
         }
-        let userLoggedIn = try req.auth.require(User.self)
-        let blog = Blog(pictureBase64: data.pictureBase64,
-                        title: data.title,
-                        contents: data.contents,
-                        userID: try userLoggedIn.requireID())
-        return blog
-            .save(on: req.db)
-            .map{ blog }
-            .flatMapThrowing { savedBlog in
-                guard let savedBlogId = savedBlog.id else { throw Abort(.internalServerError) }
-                var tagSaves: [EventLoopFuture<Void>] = []
-                for tag in data.tags ?? [] {
-                    tagSaves.append(
-                        Tag.addTag(tag, to: savedBlog, on: req))
-                }
-                return (tagSaves, savedBlogId)
-        }
-        .flatMap { (tagSaves: [EventLoopFuture<Void>], savedBlogId: Blog.IDValue) -> EventLoopFuture<Response> in
-            let redirect = req.redirect(to: "/blogs/\(savedBlogId)")
-            return tagSaves.flatten(on: req.eventLoop).transform(to: redirect)
+        return Blog
+            .query(on: req.db)
+            .field(\.$picture)
+            .filter(\.$id == blogID)
+            .first()
+            .unwrap(or: Abort(.notFound))
+            .map { $0.picture }
+            .map { .init(status: .ok, body: .init(data: $0 ?? .init())) }
+    }
+    
+    func getContentsPictureHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+        guard
+            let blogID = req.parameters.get(FieldKey.blogID.description, as: Blog.IDValue.self),
+            let order = req.parameters.get("idx", as: Int.self)
+            else { return req.eventLoop.future(.init(status: .notFound)) }
+        return BlogContent
+            .query(on: req.db)
+            .field(\.$data)
+            .filter(\.$blog.$id == blogID)
+            .filter(\.$order == order)
+            .first()
+            .map { content in
+                guard let content = content else { return .init(status: .notFound) }
+                return .init(status: .ok, body: .init(data: content.data ?? .init()))
         }
     }
     
+    func getContentsHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+        guard
+            let groupID = req.parameters.get(FieldKey.groupID.description, as: UUID.self),
+            let blogID = req.parameters.get(FieldKey.blogID.description, as: Blog.IDValue.self)
+        else {
+            return req.eventLoop.future(.init(status: .notFound))
+        }
+        return BlogContent
+            .query(on: req.db)
+            .field(\.$id)
+            .field(\.$order)
+            .field(\.$type)
+            .field(\.$attributes)
+            .field(\.$text)
+            .field(\.$data)
+            .filter(\.$blog.$id == blogID)
+            .sort(\.$order, .ascending)
+            .all()
+            .flatMapThrowing { try $0.string(groupID, blogID)?.data(using: .utf8) ?? .init() }
+            .map { .init(status: .ok, body: .init(data: $0)) }
+    }
+    
     func editBlogHandler(_ req: Request) throws -> EventLoopFuture<View> {
+        guard
+            let blogID = req.parameters.get(FieldKey.blogID.description, as: Blog.IDValue.self)
+        else {
+            throw Abort(.notFound)
+        }
         return Blog
-            .find(req.parameters.get(FieldKey.blogID.description), on: req.db)
+            .query(on: req.db)
+            .filter(\.$id == blogID)
+            .with(\.$tags)
+            .first()
             .unwrap(or: Abort(.notFound))
-            .and(value: req.auth.get(User.self))
-            .flatMap { (blog: Blog, user: User?) in
-                blog.$tags.query(on: req.db).all().flatMap { tags in
-                    let context: EditBlogContext = .init(blog: blog, tags: tags)
-                    return req.view.render("createBlog", context)
-                }
+            .flatMap { req.view.render("createBlog", EditBlogContext(blog: $0))
         }
     }
     
     func editBlogPostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-        return Blog
-            .find(req.parameters.get(FieldKey.blogID.description), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .and(value: try req.content.decode(CreateBlogData.self))
-            .and(value: try req.auth.require(User.self))
-            .flatMap {
-                let ((blog, createBlogData), user) = $0
-                blog.pictureBase64 = createBlogData.pictureBase64
-                blog.title = createBlogData.title
-                blog.contents = createBlogData.contents
-                blog.$user.id = user.id!
-                
-                return blog.save(on: req.db).map { blog }.flatMap { blog in
-                    blog.$tags.query(on: req.db).all()
-                        .flatMap { (existingTags: [Tag]) -> EventLoopFuture<Response> in
-                            let existingSet = Set<String>(existingTags.map { $0.name })
-                            let newSet = Set<String>(createBlogData.tags ?? [])
-                            let tagsToAdd = newSet.subtracting(existingSet)
-                            let tagsToRemove = existingSet.subtracting(newSet)
-                            var tagResults: [EventLoopFuture<Void>] = []
-                            tagsToAdd.forEach { newTag in
-                                tagResults.append(Tag.addTag(newTag, to: blog, on: req))
-                            }
-                            tagsToRemove.forEach { tagNameToRemove in
-                                let tagToRemove = existingTags.first { $0.name == tagNameToRemove }
-                                if let tag = tagToRemove {
-                                    tagResults.append(blog.$tags.detach(tag, on: req.db))
-                                }
-                            }
-                            
-                            let redirect = req.redirect(to: "/blogs/\(blog.id!)")
-                            return tagResults.flatten(on: req.eventLoop).transform(to: redirect)
-                    }
-                }
+        guard
+            let groupID = req.parameters.get(FieldKey.groupID.description, as: UUID.self),
+            let blogID = req.parameters.get(FieldKey.blogID.description, as: Blog.IDValue.self)
+        else {
+            return req.eventLoop.future(.init(status: .notFound))
         }
+        let d = try req.content.decode(CreateBlogData.self)
+        
+        return Blog
+            .update(
+                groupID,
+                blogID,
+                try req.auth.require(User.self).id!,
+                d.comment,
+                try convertPictureData(d.picture),
+                d.updatingPicture,
+                d.title,
+                d.contents,
+                d.tags,
+                on: req.db(.psql)
+            )
+            .map { req.redirect(to: "/blogs/\($0.groupID)/\($0.id!)") }
     }
     
     func deleteBlogHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-        Blog
-            .find(req.parameters.get(FieldKey.blogID.description), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { blog in
-                blog.$tags
-                    .get(reload: true, on: req.db)
-                    .flatMap { blog.$tags.detach($0, on: req.db) }
-                    .flatMap { blog.delete(on: req.db) }
-                    .and(value: req.auth.get(User.self))
-                    .map { req.redirect(to: "/users/\($0.1!.id!)") }
+        guard
+            let groupID = req.parameters.get(FieldKey.groupID.description, as: UUID.self)
+        else {
+            return req.eventLoop.future(.init(status: .notFound))
         }
+        return req.db.transaction { db in
+            Blog
+                .query(on: db)
+                .field(\.$id)
+                .filter(\.$groupID == groupID)
+                .all()
+                .flatMapEach(on: db.eventLoop) { $0.delete(on: db) }
+        }
+        .map { _ in req.redirect(to: "/") }
+    }
+}
+
+private extension WebsiteController {
+    func convertPictureData(_ pictureData: String?) throws -> Data? {
+        guard
+            let d = pictureData?.data(using: .utf8),
+            let json = try JSONSerialization.jsonObject(with: d) as? [String: Any],
+            let base64Format = json["data"] as? String
+        else {
+            return nil
+        }
+        let comp = base64Format.components(separatedBy: ",")
+        guard comp.count == 2 else { return nil }
+        return Data(base64Encoded: comp[1])
     }
 }
 
 struct IndexPageBlogContext: Encodable {
     let idx: Int
     let id: String
-    let pictureBase64: String?
+    let groupID: String
+    let picturePath: String?
     let title: String
     let tags: [String]?
+    let short: String?
 }
 
 struct IndexContext: Encodable {
@@ -279,8 +391,6 @@ struct UserContext: Encodable {
 struct BlogContext: Encodable {
     let title: String
     let blog: Blog
-    let user: User
-    let tags: [Tag]?
     let authenticatedUser: User?
 }
 
@@ -315,10 +425,12 @@ struct CreateBlogContext: Encodable {
 }
 
 struct CreateBlogData: Decodable {
-    let pictureBase64: String?
+    let comment: String?
+    let picture: String?
+    let updatingPicture: Bool
     let title: String
-    let contents: String
-    let tags: [String]?
+    let contents: String?
+    let tags: String?
     let csrfToken: String?
 }
 
@@ -326,5 +438,4 @@ struct EditBlogContext: Encodable {
     let title = "ブログ編集"
     let blog: Blog
     let editing = true
-    let tags: [Tag]?
 }

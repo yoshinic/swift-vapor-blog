@@ -78,11 +78,9 @@ final class TagTests: XCTestCase {
     func testGettingATagsBlogsFromTheAPI() throws {
         try _testAfterLoggedIn(loggedInRequest: true) { app, headers in
             let blogTitle = "タイトル"
-            let blogContents = "内容"
             
             let blog = try Blog.create(
                 title: blogTitle,
-                contents: blogContents,
                 on: app.db)
             let blog2 = try Blog.create(on: app.db)
             let tag = try Tag.create(name: tagName, on: app.db)
@@ -102,7 +100,6 @@ final class TagTests: XCTestCase {
                         XCTAssertEqual(blogs.count, 2)
                         XCTAssertEqual(blogs[0].id, blog.id)
                         XCTAssertEqual(blogs[0].title, blogTitle)
-                        XCTAssertEqual(blogs[0].contents, blogContents)
                 }
             )
         }

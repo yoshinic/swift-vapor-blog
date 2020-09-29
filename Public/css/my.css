@@ -1,3 +1,61 @@
+#selects {
+    border: none;
+}
+
+/* select2 */
+
+/* Tag 全体 */
+.select2-container--default.select2-container--focus .select2-selection--multiple,
+.select2-container--default .select2-selection--multiple
+{
+    border: none;
+}
+
+/* Tag 入力フォーム */
+.select2-container--default .select2-selection--multiple .select2-selection__rendered {
+    padding: 0;
+    margin: 0;
+}
+
+/* Tag の入力用　表示用テキストボックス */
+.select2-container--default .select2-search--inline .select2-search__field,
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    padding: 5px 12px 3px 0px;
+    margin: 0px;
+    background-color: transparent;
+    
+    box-shadow: inset 0 .0625em .125em rgba(10,10,10,.05);
+    border-color: #dbdbdb;
+    border-radius: 15px;
+    border: 1px solid #bbb;
+    color: #363636;
+    
+    height: 2.5em;
+}
+
+/* Tag の入力用テキストボックス */
+.select2-container--default .select2-search--inline .select2-search__field
+{
+    width: 200px !important;
+}
+
+/* Tag の表示用テキストボックス */
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    margin: 0px 10px 0px 0px;
+}
+
+/* x 印 */
+.select2-selection__choice__remove {
+    padding: 0px 5px 0px 10px;
+}
+
+/* selects dropdown */
+.selects-dropdown {
+    border: none;
+/*    background-color: transparent;*/
+}
+
+
 .mynavbar {
     margin: 30px 0px 50px 0px;
 }

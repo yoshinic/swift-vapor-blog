@@ -94,16 +94,14 @@ final class UserTests: XCTestCase {
         try _test { app in
             let user = try User.create(on: app.db)
             let blogTitle = "テスト"
-            let blogContents = "データ"
-            let blog1 = try Blog.create(title: blogTitle, contents: blogContents, user: user, on: app.db)
-            _ = try Blog.create(title: "テストタイトル２", contents: "テスト内容２", user: user, on: app.db)
+            let blog1 = try Blog.create(title: blogTitle, user: user, on: app.db)
+            _ = try Blog.create(title: "テストタイトル２", user: user, on: app.db)
             
             try app.test(.GET, "\(usersURI)\(user.id!)/blogs", afterResponse:  { response in
                 let blogs = try response.content.decode([Blog].self)
                 XCTAssertEqual(blogs.count, 2)
                 XCTAssertEqual(blogs[0].id, blog1.id)
                 XCTAssertEqual(blogs[0].title, blogTitle)
-                XCTAssertEqual(blogs[0].contents, blogContents)
             })
         }
     }

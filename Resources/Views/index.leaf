@@ -12,16 +12,13 @@
                 #endif
                     <div class="tile is-parent is-4">
                         <article class="tile is-child box">
-                            <a href="/blogs/#(blog.id)">
-                                <figure class="image is-4by3">
-                                    <img
-                                        #if(blog.pictureBase64 != "null"):src="#(blog.pictureBase64)"#endif
-                                        style="object-fit: contain;"
-                                        alt="画像"
-                                        >
-                                </figure>
-                            </a>
-                            
+                            #if(blog.picturePath):
+                                <a href="/blogs/#(blog.groupID)/#(blog.id)">
+                                    <figure class="image is-4by3">
+                                        <img src="/blogs/#(blog.groupID)/#(blog.id)/picture" style="object-fit: contain;">
+                                    </figure>
+                                </a>
+                            #endif
                             <div class="field is-grouped is-grouped-multiline">
                                 #for(tag in blog.tags):
                                     <div class="control">
@@ -32,8 +29,9 @@
                                     </div>
                                 #endfor
                             </div>
-                            <a href="/blogs/#(blog.id)">
+                            <a href="/blogs/#(blog.groupID)/#(blog.id)">
                                 <p class="title">#(blog.title)</p>
+                                <p class="subtitle">#(blog.short)</p>
                             </a>
                         </article>
                     </div>
@@ -117,7 +115,7 @@
         </div>
     </div>
   #endexport
-  
+
   #export("baseBlogScripts"):
   #endexport
 #endextend

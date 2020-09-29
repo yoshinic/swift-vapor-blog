@@ -41,13 +41,39 @@ public func configure(_ app: Application) throws {
     app.migrations.add(CreateBlog())
     app.migrations.add(CreateBlogTagPivot())
     app.migrations.add(CreateUserToken())
+    app.migrations.add(CreateBlogContent())
+    
     // use fluent session
     app.sessions.use(.fluent)
     app.migrations.add(SessionRecord.migration)
     try app.autoMigrate().wait()
     
+    try createIndex(app)
+    
     // register routes
     try routes(app)
+}
+
+private func createIndex(_ app: Application) throws {
+    func createIndexSQL(_ schema: String, _ fields: [FieldKey], unique: Bool = false, json: Bool = false) -> String {
+        let targetFields = fields.map { "\"\($0.description)\"" }.joined(separator: ",")
+        let indexFieldName = fields.map { $0.description }.joined(separator: "_")
+        let unique = unique ? "UNIQUE" : ""
+        if json {
+            let indexName = "\(schema)_\(indexFieldName)_gin_idx"
+            return "CREATE \(unique) INDEX IF NOT EXISTS \(indexName) ON \"\(schema)\" USING GIN (\(targetFields));"
+        } else {
+            let indexName = "\(schema)_\(indexFieldName)_idx"
+            return "CREATE \(unique) INDEX IF NOT EXISTS \(indexName) ON \"\(schema)\" (\(targetFields));"
+        }
+    }
+    
+    guard let db = app.db(.psql) as? PostgresDatabase else { throw Abort(.notFound) }
+    try db
+        .query(createIndexSQL(BlogContent.schema, [.blogID]))
+        .and( db.query(createIndexSQL(Blog.schema, [.groupID])) )
+        .transform(to: ())
+        .wait()
 }
 
 extension Application {

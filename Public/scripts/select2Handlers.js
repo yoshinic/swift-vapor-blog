@@ -16,12 +16,15 @@ $.ajax(
       };
       dataToReturn.push(newTag);
     }
-    $("#tags").select2(
+    $("#selects").select2(
       {
         placeholder: "タグを入力して下さい。",
         tags: true,
         tokenSeparators: [','],
         data: dataToReturn,
+        language: "ja",
+        width: '100%',
+        dropdownCssClass: 'selects-dropdown'
       }
     );
   }

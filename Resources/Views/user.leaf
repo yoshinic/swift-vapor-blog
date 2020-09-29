@@ -18,7 +18,7 @@
       <tbody>
         #for(blog in blogs):
           <tr>
-            <td><a href="/blogs/#(blog.id)">#(blog.title)</a></td>
+            <td><a href="/blogs/#(blog.groupID)/#(blog.id)">#(blog.title)</a></td>
           </tr>
         #endfor
       </tbody>

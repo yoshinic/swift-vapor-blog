@@ -14,13 +14,12 @@ final class BlogTests: XCTestCase {
     // Blogを複数作成したとき区別されているか確認
     func testBlogsCanBeRetrievedFromAPI() throws {
         try _test { app in
-            let blog1 = try Blog.create(title: blogTitle, contents: blogContents, on: app.db)
+            let blog1 = try Blog.create(title: blogTitle, on: app.db)
             _ = try Blog.create(on: app.db)
             try app.test(.GET, blogsURI, afterResponse:  { response in
                 let blogs = try response.content.decode([Blog].self)
                 XCTAssertEqual(blogs.count, 2)
                 XCTAssertEqual(blogs[0].title, blogTitle)
-                XCTAssertEqual(blogs[0].contents, blogContents)
                 XCTAssertEqual(blogs[0].id, blog1.id)
                 XCTAssertEqual(blogs[0].$user.id, blog1.$user.id)
             })
@@ -33,7 +32,7 @@ final class BlogTests: XCTestCase {
             var headers = headers
             headers.add(name: "Content-Type", value: "application/json")
             let newUser = try User.create(on: app.db)
-            let blog = Blog(pictureBase64: "", title: blogTitle, contents: blogContents, userID: newUser.id!)
+            let blog = Blog(picture: .init(), title: blogTitle, userID: newUser.id!)
             try app
                 .test(
                     .POST,
@@ -45,7 +44,6 @@ final class BlogTests: XCTestCase {
                     afterResponse: { response in
                         let receivedBlog = try response.content.decode(Blog.self)
                         XCTAssertEqual(receivedBlog.title, blogTitle)
-                        XCTAssertEqual(receivedBlog.contents, blogContents)
                         XCTAssertNotNil(receivedBlog.id)
                         XCTAssertNotNil(receivedBlog.$user.id)
                         
@@ -53,7 +51,6 @@ final class BlogTests: XCTestCase {
                             let blogs = try response.content.decode([Blog].self)
                             XCTAssertEqual(blogs.count, 1)
                             XCTAssertEqual(blogs[0].title, blogTitle)
-                            XCTAssertEqual(blogs[0].contents, blogContents)
                             XCTAssertEqual(blogs[0].id, receivedBlog.id)
                             XCTAssertEqual(blogs[0].$user.id, receivedBlog.$user.id)
                         })
@@ -64,11 +61,10 @@ final class BlogTests: XCTestCase {
     // Blog を１つ取得できるか確認
     func testGettingASingleBlogFromTheAPI() throws {
         try _test { app in
-            let blog = try Blog.create(title: blogTitle, contents: blogContents, on: app.db)
+            let blog = try Blog.create(title: blogTitle, on: app.db)
             try app.test(.GET, "\(blogsURI)\(blog.id!)", afterResponse:  { response in
                 let returnedBlog = try response.content.decode(Blog.self)
                 XCTAssertEqual(returnedBlog.title, blogTitle)
-                XCTAssertEqual(returnedBlog.contents, blogContents)
                 XCTAssertEqual(returnedBlog.id, blog.id)
                 XCTAssertEqual(returnedBlog.$user.id, blog.$user.id)
             })
@@ -94,10 +90,9 @@ final class BlogTests: XCTestCase {
         try _testAfterLoggedIn(loggedInRequest: true) { app, headers in
             var headers = headers
             headers.add(name: "Content-Type", value: "application/json")
-            let blog = try Blog.create(title: blogTitle, contents: blogContents, on: app.db)
-            let newContents = "更新内容"
+            let blog = try Blog.create(title: blogTitle, on: app.db)
             let newUser = try User.create(on: app.db)
-            let updatedBlog = Blog(pictureBase64: "", title: blogTitle, contents: newContents, userID: newUser.id!)
+            let updatedBlog = Blog(picture: .init(), title: blogTitle, userID: newUser.id!)
             try app
                 .test(
                     .PUT,
@@ -109,7 +104,6 @@ final class BlogTests: XCTestCase {
                         try app.test(.GET, "\(blogsURI)\(blog.id!)", afterResponse:  { response in
                             let returnedBlog = try response.content.decode(Blog.self)
                             XCTAssertEqual(returnedBlog.title, blogTitle)
-                            XCTAssertEqual(returnedBlog.contents, blogContents)
                         })
                 })
                 .test(
@@ -123,7 +117,6 @@ final class BlogTests: XCTestCase {
                         try app.test(.GET, "\(blogsURI)\(blog.id!)", afterResponse:  { response in
                             let returnedBlog = try response.content.decode(Blog.self)
                             XCTAssertEqual(returnedBlog.title, blogTitle)
-                            XCTAssertEqual(returnedBlog.contents, newContents)
                             XCTAssertEqual(returnedBlog.$user.id, newUser.id!)
                         })
                 })
